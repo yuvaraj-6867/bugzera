@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BugZera - Complete Test Management Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Primary Brand Colors */
+            --primary-900: #0A0E27;
+            --primary-800: #161B3D;
+            --primary-700: #1E2749;
+            --primary-600: #2A3458;
+            --primary-500: #3D4A73;
+            --primary-400: #556396;
+            
+            /* Accent Colors */
+            --accent-electric: #00F0FF;
+            --accent-neon: #7B61FF;
+            --accent-coral: #FF6B9D;
+            --accent-lime: #B4FF39;
+            
+            /* Status Colors */
+            --success: #00E676;
+            --warning: #FFB800;
+            --error: #FF3B30;
+            --info: #00B4D8;
+            
+            /* Neutrals */
+            --gray-50: #F8FAFC;
+            --gray-100: #F1F5F9;
+            --gray-200: #E2E8F0;
+            --gray-300: #CBD5E1;
+            --gray-400: #94A3B8;
+            --gray-500: #64748B;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1E293B;
+            --gray-900: #0F172A;
+            
+            /* Semantic */
+            --bg-primary: #FAFBFC;
+            --bg-secondary: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #64748B;
+            --border: #E2E8F0;
+            
+            /* Effects */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem 1rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            left: 0;
+            top: 0;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--primary-900), var(--accent-neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            padding: 0 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: var(--gray-50);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(123, 97, 255, 0.1), rgba(0, 240, 255, 0.05));
+            color: var(--accent-neon);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 2rem;
+            width: calc(100% - 260px);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .form-label .required {
+            color: var(--error);
+            margin-left: 0.25rem;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-neon);
+            box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-help {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .form-error {
+            font-size: 0.8125rem;
+            color: var(--error);
+            margin-top: 0.25rem;
+        }
+
+        /* Checkbox and Radio */
+        .form-checkbox, .form-radio {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .form-checkbox input, .form-radio input {
+            width: 18px;
+            height: 18px;
+            margin-right: 0.75rem;
+            cursor: pointer;
+        }
+
+        .form-checkbox label, .form-radio label {
+            cursor: pointer;
+            font-size: 0.9375rem;
+        }
+
+        /* Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .form-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-neon), var(--accent-electric));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(123, 97, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--gray-50);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #E63028;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--gray-100);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        /* Screen Sections */
+        .screen-section {
+            display: none;
+        }
+
+        .screen-section.active {
+            display: block;
+        }
+
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-success {
+            background: rgba(0, 230, 118, 0.1);
+            color: var(--success);
+        }
+
+        .badge-error {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--error);
+        }
+
+        .badge-warning {
+            background: rgba(255, 184, 0, 0.1);
+            color: var(--warning);
+        }
+
+        .badge-info {
+            background: rgba(0, 180, 216, 0.1);
+            color: var(--info);
+        }
+
+        .badge-neutral {
+            background: var(--gray-100);
+            color: var(--text-secondary);
+        }
+
+        /* File Upload */
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent-neon);
+            background: rgba(123, 97, 255, 0.02);
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        /* Tags Input */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            min-height: 48px;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: var(--gray-100);
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: bold;
+        }
+
+        /* Utility Classes */
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-1 {
+            gap: 0.5rem;
+        }
+
+        .gap-2 {
+            gap: 1rem;
+        }
+
+        .gap-3 {
+            gap: 1.5rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 2rem;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .mt-4 {
+            margin-top: 2rem;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--gray-50);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.mobile-active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .form-grid, .form-grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">BugZera</div>
+            
+            <nav>
+                <a href="#" class="nav-item active" data-screen="dashboard">
+                    <span>📊</span> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-screen="projects">
+                    <span>📁</span> Projects
+                </a>
+                <a href="#" class="nav-item" data-screen="test-cases">
+                    <span>✓</span> Test Cases
+                </a>
+                <a href="#" class="nav-item" data-screen="test-runs">
+                    <span>▶</span> Test Runs
+                </a>
+                <a href="#" class="nav-item" data-screen="tickets">
+                    <span>🎫</span> Tickets
+                </a>
+                <a href="#" class="nav-item" data-screen="calendar">
+                    <span>📅</span> Calendar
+                </a>
+                <a href="#" class="nav-item" data-screen="documents">
+                    <span>📄</span> Documents
+                </a>
+                <a href="#" class="nav-item" data-screen="users">
+                    <span>👥</span> Users
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Screen -->
+            <section id="dashboard" class="screen-section active">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Dashboard</h1>
+                        <p style="color: var(--text-secondary);">Welcome back! Here's your testing overview.</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;">Quick Stats</h3>
+                    <p style="color: var(--text-secondary);">Dashboard metrics will be displayed here</p>
+                </div>
+            </section>
+
+            <!-- Projects Screen -->
+            <section id="projects" class="screen-section">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Projects</h1>
+                        <p style="color: var(--text-secondary);">Manage your testing projects</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('projectModal')">
+                        <span>+</span> New Project
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Your Projects</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">No projects yet. Create your first project to get started.</p>
+                </div>
+            </section>
+
+            <!-- Test Cases Screen -->
+            <section id="test-cases" class="screen-section">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Test Cases</h1>
+                        <p style="color: var(--text-secondary);">Create and manage test cases</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('testCaseModal')">
+                        <span>+</span> New Test Case
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Test Cases</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">No test cases yet. Create your first test case.</p>
+                </div>
+            </section>
+
+            <!-- Test Runs Screen -->
+            <section id="test-runs" class="screen-section">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Test Runs</h1>
+                        <p style="color: var(--text-secondary);">Execute and monitor test runs</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('testRunModal')">
+                        <span>▶</span> Start Test Run
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Test Run History</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">No test runs yet.</p>
+                </div>
+            </section>
+
+            <!-- Tickets Screen -->
+            <section id="tickets" class="screen-section">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Tickets</h1>
+                        <p style="color: var(--text-secondary);">Track bugs and issues</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('ticketModal')">
+                        <span>+</span> New Ticket
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Open Tickets</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">No tickets yet.</p>
+                </div>
+            </section>
+
+            <!-- Calendar Screen -->
+            <section id="calendar" class="screen-section">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Calendar</h1>
+                        <p style="color: var(--text-secondary);">Schedule and manage events</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('calendarEventModal')">
+                        <span>+</span> New Event
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Upcoming Events</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">No events scheduled.</p>
+                </div>
+            </section>
+
+            <!-- Documents Screen -->
+            <section id="documents" class="screen-section">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Documents</h1>
+                        <p style="color: var(--text-secondary);">Store and manage documentation</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('documentModal')">
+                        <span>+</span> Upload Document
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Your Documents</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">No documents yet.</p>
+                </div>
+            </section>
+
+            <!-- Users Screen -->
+            <section id="users" class="screen-section">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Users</h1>
+                        <p style="color: var(--text-secondary);">Manage team members</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('userModal')">
+                        <span>+</span> Invite User
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Team Members</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">No users yet.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PROJECT MODAL -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create New Project</h2>
+                <button class="modal-close" onclick="closeModal('projectModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="projectForm">
+                    <div class="form-group">
+                        <label class="form-label">Project Name <span class="required">*</span></label>
+                        <input type="text" class="form-input" name="name" placeholder="Enter project name" required maxlength="255">
+                        <span class="form-help">Maximum 255 characters, must be unique</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" name="description" placeholder="Describe your project..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="active" selected>Active</option>
+                                <option value="archived">Archived</option>
+                                <option value="on_hold">On Hold</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Visibility</label>
+                            <select class="form-select" name="visibility">
+                                <option value="private">Private</option>
+                                <option value="team" selected>Team</option>
+                                <option value="public">Public</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Repository URL</label>
+                        <input type="url" class="form-input" name="repository_url" placeholder="https://github.com/username/repo">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Repository Type</label>
+                            <select class="form-select" name="repository_type">
+                                <option value="">Select type</option>
+                                <option value="github">GitHub</option>
+                                <option value="gitlab">GitLab</option>
+                                <option value="bitbucket">Bitbucket</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Default Branch</label>
+                            <input type="text" class="form-input" name="default_branch" placeholder="main" value="main">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label class="form-label">Test Timeout (seconds)</label>
+                            <input type="number" class="form-input" name="test_timeout" value="300" min="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Retry Failed Tests</label>
+                            <input type="number" class="form-input" name="retry_failed_tests" value="0" min="0" max="5">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Max Parallel Jobs</label>
+                            <input type="number" class="form-input" name="max_parallel_jobs" value="1" min="1" max="10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Parallel Execution</label>
+                        <select class="form-select" name="parallel_execution">
+                            <option value="sequential" selected>Sequential</option>
+                            <option value="parallel">Parallel</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="email_notifications" name="email_notifications_enabled" checked>
+                            <label for="email_notifications">Enable Email Notifications</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="slack_notifications" name="slack_notifications_enabled">
+                            <label for="slack_notifications">Enable Slack Notifications</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Webhook URL</label>
+                        <input type="url" class="form-input" name="webhook_url" placeholder="https://your-webhook-url.com/endpoint">
+                        <span class="form-help">Receive project events via webhook</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('projectModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitForm('projectForm')">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEST CASE MODAL -->
+    <div id="testCaseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Test Case</h2>
+                <button class="modal-close" onclick="closeModal('testCaseModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="testCaseForm">
+                    <div class="form-group">
+                        <label class="form-label">Title <span class="required">*</span></label>
+                        <input type="text" class="form-input" name="title" placeholder="Enter test case title" required maxlength="255">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" name="description" placeholder="Describe the test case..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Priority <span class="required">*</span></label>
+                            <select class="form-select" name="priority" required>
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Test Type</label>
+                            <select class="form-select" name="test_type">
+                                <option value="functional" selected>Functional</option>
+                                <option value="regression">Regression</option>
+                                <option value="smoke">Smoke</option>
+                                <option value="integration">Integration</option>
+                                <option value="e2e">End-to-End</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="draft" selected>Draft</option>
+                                <option value="active">Active</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Automation Status</label>
+                            <select class="form-select" name="automation_status">
+                                <option value="not_automated" selected>Not Automated</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="automated">Automated</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Preconditions</label>
+                        <textarea class="form-textarea" name="preconditions" placeholder="Enter preconditions..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Test Steps</label>
+                        <textarea class="form-textarea" name="steps" placeholder="1. Step one&#10;2. Step two&#10;3. Step three" rows="5"></textarea>
+                        <span class="form-help">Enter each step on a new line</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Expected Results <span class="required">*</span></label>
+                        <textarea class="form-textarea" name="expected_results" placeholder="Enter expected results..." rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Test Data</label>
+                        <textarea class="form-textarea" name="test_data" placeholder="Enter test data (e.g., username, password, test inputs)..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Post Conditions</label>
+                        <textarea class="form-textarea" name="post_conditions" placeholder="Enter post conditions..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Estimated Duration (minutes)</label>
+                        <input type="number" class="form-input" name="estimated_duration" min="1" placeholder="e.g., 15">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input type="text" class="form-input" name="tags" placeholder="e.g., login, authentication, critical">
+                        <span class="form-help">Separate tags with commas</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Assigned To</label>
+                        <select class="form-select" name="assigned_user_id">
+                            <option value="">Unassigned</option>
+                            <option value="1">John Doe</option>
+                            <option value="2">Jane Smith</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="flaky_flag" name="flaky_flag">
+                            <label for="flaky_flag">Mark as Flaky Test</label>
+                        </div>
+                        <span class="form-help">Tests that sometimes pass and sometimes fail</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('testCaseModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitForm('testCaseForm')">Create Test Case</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEST RUN MODAL -->
+    <div id="testRunModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Start Test Run</h2>
+                <button class="modal-close" onclick="closeModal('testRunModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="testRunForm">
+                    <div class="form-group">
+                        <label class="form-label">Test Case <span class="required">*</span></label>
+                        <select class="form-select" name="test_case_id" required>
+                            <option value="">Select test case</option>
+                            <option value="1">TC-001: User Login</option>
+                            <option value="2">TC-002: Password Reset</option>
+                            <option value="3">TC-003: Payment Gateway</option>
+                        </select>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Environment</label>
+                            <select class="form-select" name="environment_id">
+                                <option value="">Select environment</option>
+                                <option value="1">Production</option>
+                                <option value="2">Staging</option>
+                                <option value="3">Development</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Triggered By</label>
+                            <select class="form-select" name="triggered_by">
+                                <option value="manual" selected>Manual</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="ci_cd">CI/CD</option>
+                                <option value="webhook">Webhook</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Browser Name</label>
+                        <input type="text" class="form-input" name="browser_name" placeholder="e.g., Chrome, Firefox, Safari">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Browser Version</label>
+                            <input type="text" class="form-input" name="browser_version" placeholder="e.g., 118.0">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Screen Resolution</label>
+                            <input type="text" class="form-input" name="screen_resolution" placeholder="e.g., 1920x1080">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">OS Details</label>
+                        <input type="text" class="form-input" name="os_details" placeholder="e.g., Windows 11, macOS Sonoma">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-textarea" name="notes" placeholder="Add any notes about this test run..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="is_automated" name="is_automated">
+                            <label for="is_automated">Automated Test Run</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('testRunModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitForm('testRunForm')">Start Test Run</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TICKET MODAL -->
+    <div id="ticketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Ticket</h2>
+                <button class="modal-close" onclick="closeModal('ticketModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="ticketForm">
+                    <div class="form-group">
+                        <label class="form-label">Title <span class="required">*</span></label>
+                        <input type="text" class="form-input" name="title" placeholder="Enter ticket title" required maxlength="255">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description <span class="required">*</span></label>
+                        <textarea class="form-textarea" name="description" placeholder="Describe the issue..." rows="4" required></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" name="ticket_type">
+                                <option value="bug" selected>Bug</option>
+                                <option value="feature">Feature</option>
+                                <option value="improvement">Improvement</option>
+                                <option value="task">Task</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="open" selected>Open</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Severity</label>
+                            <select class="form-select" name="severity">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select" name="priority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Assigned To</label>
+                        <select class="form-select" name="assigned_user_id">
+                            <option value="">Unassigned</option>
+                            <option value="1">John Doe</option>
+                            <option value="2">Jane Smith</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Environment</label>
+                        <input type="text" class="form-input" name="environment" placeholder="e.g., Production, Staging">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Browser Version</label>
+                            <input type="text" class="form-input" name="browser_version" placeholder="e.g., Chrome 118">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">OS Details</label>
+                            <input type="text" class="form-input" name="os_details" placeholder="e.g., Windows 11">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Steps to Reproduce</label>
+                        <textarea class="form-textarea" name="steps_to_reproduce" placeholder="1. Step one&#10;2. Step two&#10;3. Step three" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Actual Result</label>
+                        <textarea class="form-textarea" name="actual_result" placeholder="What actually happened..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Expected Result</label>
+                        <textarea class="form-textarea" name="expected_result" placeholder="What should have happened..." rows="2"></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Estimate (hours)</label>
+                            <input type="number" class="form-input" name="estimate" min="0" step="0.5" placeholder="e.g., 2.5">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-input" name="due_date">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Milestone</label>
+                        <input type="text" class="form-input" name="milestone" placeholder="e.g., v1.0, Sprint 5">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Related Test Case</label>
+                        <select class="form-select" name="test_case_id">
+                            <option value="">None</option>
+                            <option value="1">TC-001: User Login</option>
+                            <option value="2">TC-002: Password Reset</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('ticketModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitForm('ticketForm')">Create Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CALENDAR EVENT MODAL -->
+    <div id="calendarEventModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Calendar Event</h2>
+                <button class="modal-close" onclick="closeModal('calendarEventModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="calendarEventForm">
+                    <div class="form-group">
+                        <label class="form-label">Event Title <span class="required">*</span></label>
+                        <input type="text" class="form-input" name="title" placeholder="Enter event title" required maxlength="255">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" name="description" placeholder="Describe the event..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Start Time <span class="required">*</span></label>
+                            <input type="datetime-local" class="form-input" name="start_time" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">End Time <span class="required">*</span></label>
+                            <input type="datetime-local" class="form-input" name="end_time" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="all_day" name="all_day">
+                            <label for="all_day">All Day Event</label>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Event Type</label>
+                            <select class="form-select" name="event_type">
+                                <option value="test_cycle">Test Cycle</option>
+                                <option value="bug_triage">Bug Triage</option>
+                                <option value="standup">Standup</option>
+                                <option value="deadline">Deadline</option>
+                                <option value="release">Release</option>
+                                <option value="meeting" selected>Meeting</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select" name="priority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-input" name="location" placeholder="e.g., Conference Room A, Online">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Meeting URL</label>
+                        <input type="url" class="form-input" name="meeting_url" placeholder="https://meet.google.com/xxx-xxxx-xxx">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Timezone</label>
+                        <select class="form-select" name="timezone">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time (ET)</option>
+                            <option value="America/Chicago">Central Time (CT)</option>
+                            <option value="America/Denver">Mountain Time (MT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Reminder (minutes before)</label>
+                        <input type="number" class="form-input" name="reminder_minutes" min="0" value="15" placeholder="15">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="send_email_reminder" name="send_email_reminder" checked>
+                            <label for="send_email_reminder">Send Email Reminder</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="is_recurring" name="is_recurring">
+                            <label for="is_recurring">Recurring Event</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Attendees</label>
+                        <input type="text" class="form-input" name="attendees" placeholder="Select attendees">
+                        <span class="form-help">Start typing to search for users</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Related Project</label>
+                        <select class="form-select" name="project_id">
+                            <option value="">None</option>
+                            <option value="1">E-Commerce Platform</option>
+                            <option value="2">Mobile App v2</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('calendarEventModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitForm('calendarEventForm')">Create Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCUMENT MODAL -->
+    <div id="documentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Upload Document</h2>
+                <button class="modal-close" onclick="closeModal('documentModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="documentForm">
+                    <div class="form-group">
+                        <label class="form-label">Title <span class="required">*</span></label>
+                        <input type="text" class="form-input" name="title" placeholder="Enter document title" required maxlength="255">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" name="description" placeholder="Describe the document..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">File <span class="required">*</span></label>
+                        <div class="file-upload" onclick="document.getElementById('documentFile').click()">
+                            <input type="file" id="documentFile" name="file" required>
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+                            <div style="font-weight: 600; margin-bottom: 0.5rem;">Click to upload document</div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;">or drag and drop</div>
+                            <div style="color: var(--text-secondary); font-size: 0.8125rem; margin-top: 0.5rem;">Supports PDF, DOC, DOCX, XLS, XLSX, TXT</div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="draft" selected>Draft</option>
+                                <option value="in_review">In Review</option>
+                                <option value="approved">Approved</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Access Level</label>
+                            <select class="form-select" name="access_level">
+                                <option value="public">Public</option>
+                                <option value="team" selected>Team</option>
+                                <option value="restricted">Restricted</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Folder</label>
+                        <select class="form-select" name="folder_id">
+                            <option value="">Root Folder</option>
+                            <option value="1">Test Plans</option>
+                            <option value="2">Requirements</option>
+                            <option value="3">Reports</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project <span class="required">*</span></label>
+                        <select class="form-select" name="project_id" required>
+                            <option value="">Select project</option>
+                            <option value="1">E-Commerce Platform</option>
+                            <option value="2">Mobile App v2</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input type="text" class="form-input" name="tags" placeholder="e.g., test-plan, requirements, critical">
+                        <span class="form-help">Separate tags with commas</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Version</label>
+                        <input type="text" class="form-input" name="version" value="1.0" placeholder="e.g., 1.0, 2.3">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('documentModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitForm('documentForm')">Upload Document</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- USER/INVITE MODAL -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Invite User</h2>
+                <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label class="form-label">Email Address <span class="required">*</span></label>
+                        <input type="email" class="form-input" name="email" placeholder="user@example.com" required>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">First Name <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="first_name" placeholder="John" required maxlength="100">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Last Name <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="last_name" placeholder="Doe" required maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Role <span class="required">*</span></label>
+                            <select class="form-select" name="role" required>
+                                <option value="member" selected>Member</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <span class="form-help">Member: Standard access, Manager: Extended access, Admin: Full access</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Job Title</label>
+                            <input type="text" class="form-input" name="title" placeholder="e.g., QA Engineer">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-input" name="department" placeholder="e.g., Quality Assurance">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-input" name="location" placeholder="e.g., New York, USA">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-input" name="phone" placeholder="+1 (555) 123-4567">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project Assignment</label>
+                        <select class="form-select" name="project_id">
+                            <option value="">No project assignment</option>
+                            <option value="1">E-Commerce Platform</option>
+                            <option value="2">Mobile App v2</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Timezone</label>
+                        <select class="form-select" name="timezone">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time (ET)</option>
+                            <option value="America/Chicago">Central Time (CT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Language</label>
+                        <select class="form-select" name="language">
+                            <option value="en" selected>English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('userModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitForm('userForm')">Send Invitation</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Update active nav item
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show corresponding screen
+                const screen = this.dataset.screen;
+                document.querySelectorAll('.screen-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(screen).classList.add('active');
+            });
+        });
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // Form submission
+        function submitForm(formId) {
+            const form = document.getElementById(formId);
+            if (form.checkValidity()) {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                
+                console.log('Form submitted:', data);
+                alert('Form submitted successfully! (This is a demo - check console for data)');
+                
+                // Close modal
+                const modal = form.closest('.modal');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+                
+                // Reset form
+                form.reset();
+            } else {
+                form.reportValidity();
+            }
+        }
+
+        // File upload preview
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function(e) {
+                if (this.files.length > 0) {
+                    const fileName = this.files[0].name;
+                    const uploadDiv = this.closest('.file-upload');
+                    if (uploadDiv) {
+                        uploadDiv.innerHTML = `
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">✓</div>
+                            <div style="font-weight: 600; margin-bottom: 0.5rem;">${fileName}</div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;">Click to change file</div>
+                        `;
+                        uploadDiv.onclick = () => this.click();
+                    }
+                }
+            });
+        });
+
+        // Escape key to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
