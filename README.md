@@ -123,8 +123,6 @@ MIT License - see LICENSE file
 ## 👨‍💻 Author
 
 **Yuvaraj**
-- GitHub: [@yuvaraj106](https://github.com/yuvaraj106)
-- Email: yuvaraj@drylogics.com
 
 ## 🙏 Acknowledgments
 
