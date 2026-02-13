@@ -1,4 +1,5 @@
 class Api::V1::SprintsController < ApplicationController
+  skip_before_action :authenticate_request, :check_authorization
   def index
     sprints = Sprint.all
 
@@ -62,6 +63,12 @@ class Api::V1::SprintsController < ApplicationController
       end_date: sprint.end_date,
       status: sprint.status,
       project_id: sprint.project_id,
+      total_tickets: sprint.tickets.count,
+      todo_count: sprint.tickets.where(status: 'todo').count,
+      in_progress_count: sprint.tickets.where(status: 'in_progress').count,
+      in_review_count: sprint.tickets.where(status: 'in_review').count,
+      qa_ready_count: sprint.tickets.where(status: 'qa_ready').count,
+      done_count: sprint.tickets.where(status: 'done').count,
       created_at: sprint.created_at,
       updated_at: sprint.updated_at
     }

@@ -4,11 +4,14 @@ module ProjectAuthorization
   private
 
   def check_project_access(project_id, required_role = 'viewer')
+    # If no current_user (auth disabled), allow access
+    return true if current_user.nil?
+
     return true if current_user.admin? # System admin has access to all projects
-    
+
     project_user = ProjectUser.find_by(project_id: project_id, user_id: current_user.id)
     return false unless project_user
-    
+
     case required_role
     when 'admin'
       project_user.role == 'admin'

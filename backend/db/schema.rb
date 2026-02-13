@@ -10,10 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
-  # These are extensions that must be enabled in order to support this database
-  enable_extension "plpgsql"
-
+ActiveRecord::Schema[7.1].define(version: 2026_02_13_090244) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -42,12 +39,28 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "articles", force: :cascade do |t|
+    t.string "title"
+    t.string "category"
+    t.string "status"
+    t.text "content"
+    t.string "tags"
+    t.boolean "visibility"
+    t.text "summary"
+    t.string "related_articles"
+    t.integer "author_id"
+    t.integer "display_order"
+    t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "automation_scripts", force: :cascade do |t|
     t.string "name"
     t.text "description"
     t.string "script_path"
-    t.bigint "test_case_id", null: false
-    t.bigint "user_id", null: false
+    t.integer "test_case_id"
+    t.integer "user_id"
     t.string "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -64,9 +77,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.boolean "all_day", default: false
     t.string "location"
     t.text "attendees"
-    t.bigint "created_by_id", null: false
+    t.integer "created_by_id", null: false
     t.string "eventable_type"
-    t.bigint "eventable_id"
+    t.integer "eventable_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["created_by_id"], name: "index_calendar_events_on_created_by_id"
@@ -79,8 +92,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   create_table "comments", force: :cascade do |t|
     t.text "content"
     t.string "commentable_type", null: false
-    t.bigint "commentable_id", null: false
-    t.bigint "user_id", null: false
+    t.integer "commentable_id", null: false
+    t.integer "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
@@ -94,24 +107,63 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.integer "file_size"
     t.string "content_type"
     t.string "version"
-    t.bigint "folder_id"
-    t.bigint "user_id", null: false
+    t.integer "folder_id"
+    t.integer "user_id", null: false
     t.text "tags"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "project_id"
+    t.integer "project_id"
     t.index ["folder_id"], name: "index_documents_on_folder_id"
     t.index ["project_id"], name: "index_documents_on_project_id"
     t.index ["user_id"], name: "index_documents_on_user_id"
   end
 
+  create_table "environments", force: :cascade do |t|
+    t.string "name"
+    t.text "description"
+    t.string "environment_type"
+    t.string "status"
+    t.string "base_url"
+    t.string "health_check_url"
+    t.integer "project_id"
+    t.text "database_connection"
+    t.text "environment_variables"
+    t.string "api_key"
+    t.string "secret_key"
+    t.text "target_devices"
+    t.json "browser_matrix"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "folders", force: :cascade do |t|
     t.string "name"
     t.text "description"
-    t.bigint "parent_id"
+    t.integer "parent_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["parent_id"], name: "index_folders_on_parent_id"
+  end
+
+  create_table "integrations", force: :cascade do |t|
+    t.string "name"
+    t.text "description"
+    t.string "integration_type"
+    t.string "status"
+    t.integer "project_id"
+    t.string "auth_type"
+    t.text "api_key"
+    t.string "username"
+    t.string "password_digest"
+    t.string "base_url"
+    t.string "webhook_url"
+    t.string "secret_token"
+    t.boolean "auto_sync"
+    t.integer "sync_interval"
+    t.json "config_settings"
+    t.json "event_types"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "invitations", force: :cascade do |t|
@@ -121,7 +173,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.string "role", null: false
     t.string "token", null: false
     t.integer "status", default: 0
-    t.bigint "invited_by_id", null: false
+    t.integer "invited_by_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_invitations_on_email"
@@ -139,13 +191,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   end
 
   create_table "notifications", force: :cascade do |t|
-    t.bigint "user_id", null: false
+    t.integer "user_id", null: false
     t.string "title"
     t.text "message"
     t.string "notification_type"
     t.boolean "read", default: false
     t.string "notifiable_type"
-    t.bigint "notifiable_id"
+    t.integer "notifiable_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
@@ -153,8 +205,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   end
 
   create_table "project_users", force: :cascade do |t|
-    t.bigint "project_id", null: false
-    t.bigint "user_id", null: false
+    t.integer "project_id", null: false
+    t.integer "user_id", null: false
     t.string "role", default: "member"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -184,14 +236,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.date "start_date", null: false
     t.date "end_date", null: false
     t.string "status", default: "planned", null: false
-    t.bigint "project_id", null: false
+    t.integer "project_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["project_id"], name: "index_sprints_on_project_id"
   end
 
   create_table "test_artifacts", force: :cascade do |t|
-    t.bigint "test_run_id", null: false
+    t.integer "test_run_id", null: false
     t.string "artifact_type"
     t.string "name"
     t.string "file_path"
@@ -204,7 +256,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   end
 
   create_table "test_case_attachments", force: :cascade do |t|
-    t.bigint "test_case_id", null: false
+    t.integer "test_case_id", null: false
     t.string "filename", null: false
     t.string "content_type", null: false
     t.integer "file_size", null: false
@@ -222,13 +274,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.text "steps"
     t.text "expected_results"
     t.string "status"
-    t.bigint "assigned_user_id"
-    t.bigint "folder_id"
-    t.bigint "created_by_id", null: false
+    t.integer "assigned_user_id"
+    t.integer "folder_id"
+    t.integer "created_by_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "test_data"
-    t.bigint "project_id"
+    t.integer "project_id"
     t.index ["assigned_user_id"], name: "index_test_cases_on_assigned_user_id"
     t.index ["created_at"], name: "index_test_cases_on_created_at"
     t.index ["created_by_id"], name: "index_test_cases_on_created_by_id"
@@ -237,16 +289,58 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.index ["status"], name: "index_test_cases_on_status"
   end
 
+  create_table "test_data_sets", force: :cascade do |t|
+    t.string "name"
+    t.text "description"
+    t.integer "project_id"
+    t.integer "environment_id"
+    t.string "data_type"
+    t.string "version"
+    t.text "data_content"
+    t.string "generation_method"
+    t.integer "template_id"
+    t.integer "records_count"
+    t.boolean "is_active"
+    t.boolean "mask_sensitive"
+    t.string "tags"
+    t.json "data_schema"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "test_plan_test_cases", force: :cascade do |t|
+    t.integer "test_plan_id", null: false
+    t.integer "test_case_id", null: false
+    t.integer "execution_order"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["test_case_id"], name: "index_test_plan_test_cases_on_test_case_id"
+    t.index ["test_plan_id"], name: "index_test_plan_test_cases_on_test_plan_id"
+  end
+
+  create_table "test_plans", force: :cascade do |t|
+    t.string "name"
+    t.text "description"
+    t.string "status"
+    t.date "start_date"
+    t.date "end_date"
+    t.integer "created_by"
+    t.integer "project_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "test_plan_number"
+  end
+
   create_table "test_runs", force: :cascade do |t|
-    t.bigint "test_case_id"
-    t.bigint "user_id", null: false
+    t.integer "test_case_id"
+    t.integer "user_id", null: false
     t.string "status"
     t.integer "execution_time"
     t.text "notes"
     t.text "evidence"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "automation_script_id"
+    t.integer "automation_script_id"
     t.integer "project_id"
     t.text "settings"
     t.string "current_step"
@@ -258,8 +352,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   end
 
   create_table "ticket_labels", force: :cascade do |t|
-    t.bigint "ticket_id", null: false
-    t.bigint "label_id", null: false
+    t.integer "ticket_id", null: false
+    t.integer "label_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["label_id"], name: "index_ticket_labels_on_label_id"
@@ -271,14 +365,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
     t.text "description"
     t.string "status"
     t.string "severity"
-    t.bigint "assigned_user_id"
-    t.bigint "created_by_id", null: false
+    t.integer "assigned_user_id"
+    t.integer "created_by_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.decimal "estimate", precision: 5, scale: 2
-    t.bigint "test_case_id"
-    t.bigint "test_run_id"
-    t.bigint "project_id"
+    t.integer "test_case_id"
+    t.integer "test_run_id"
+    t.integer "project_id"
     t.text "attachments"
     t.text "test_steps"
     t.text "expected_result"
@@ -293,9 +387,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   end
 
   create_table "user_calls", force: :cascade do |t|
-    t.bigint "caller_id", null: false
-    t.bigint "receiver_id", null: false
-    t.bigint "test_case_id"
+    t.integer "caller_id", null: false
+    t.integer "receiver_id", null: false
+    t.integer "test_case_id"
     t.string "status", default: "initiated"
     t.string "call_type"
     t.datetime "started_at"
@@ -313,7 +407,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   create_table "user_invitations", force: :cascade do |t|
     t.string "email"
     t.string "status", default: "pending"
-    t.bigint "invited_by_id", null: false
+    t.integer "invited_by_id", null: false
     t.string "role"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -323,7 +417,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   end
 
   create_table "user_settings", force: :cascade do |t|
-    t.bigint "user_id", null: false
+    t.integer "user_id", null: false
     t.string "theme", default: "system"
     t.string "language", default: "en"
     t.string "timezone", default: "UTC"
@@ -374,6 +468,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_06_130000) do
   add_foreign_key "test_cases", "projects"
   add_foreign_key "test_cases", "users", column: "assigned_user_id"
   add_foreign_key "test_cases", "users", column: "created_by_id"
+  add_foreign_key "test_plan_test_cases", "test_cases"
+  add_foreign_key "test_plan_test_cases", "test_plans"
   add_foreign_key "test_runs", "automation_scripts"
   add_foreign_key "test_runs", "test_cases"
   add_foreign_key "test_runs", "users"

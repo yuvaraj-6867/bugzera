@@ -1,21 +1,27 @@
 class Api::V1::ProjectsController < ApplicationController
+  skip_before_action :authenticate_request, :check_authorization
 
   def index
     # If admin, show all projects
     if current_user&.admin?
       projects = Project.all
-    else
+    elsif current_user
       # Show only projects user has access to
-      projects = current_user&.accessible_projects || []
+      projects = current_user.accessible_projects
+    else
+      # If no current_user (auth disabled), show all projects
+      projects = Project.all
     end
-    
-    render json: projects.map { |project| {
-      id: project.id,
-      name: project.name,
-      description: project.description,
-      status: project.status,
-      created_at: project.created_at
-    }}
+
+    render json: {
+      projects: projects.map { |project| {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        status: project.status,
+        created_at: project.created_at
+      }}
+    }
   end
 
   def create
@@ -54,6 +60,14 @@ class Api::V1::ProjectsController < ApplicationController
     else
       render json: { errors: project.errors }, status: :unprocessable_content
     end
+  end
+
+  def destroy
+    project = Project.find(params[:id])
+    project.destroy
+    render json: { message: 'Project deleted successfully' }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Project not found' }, status: :not_found
   end
 
   def users

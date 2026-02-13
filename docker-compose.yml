@@ -1,0 +1,116 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bugzera_postgres
+    environment:
+      POSTGRES_USER: bugzera
+      POSTGRES_PASSWORD: bugzera_password
+      POSTGRES_DB: bugzera_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bugzera_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bugzera"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: bugzera_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bugzera_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Rails Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bugzera_backend
+    command: sh -c "rm -f tmp/pids/server.pid && bundle exec rails db:create db:migrate && bundle exec rails server -b 0.0.0.0 -p 3000"
+    volumes:
+      - ./backend:/app
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_USER: bugzera
+      DATABASE_PASSWORD: bugzera_password
+      DATABASE_NAME: bugzera_development
+      REDIS_URL: redis://redis:6379/1
+      RAILS_ENV: development
+      FRONTEND_URL: http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bugzera_network
+
+  # Sidekiq Background Jobs
+  sidekiq:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bugzera_sidekiq
+    command: bundle exec sidekiq
+    volumes:
+      - ./backend:/app
+      - bundle_cache:/usr/local/bundle
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_USER: bugzera
+      DATABASE_PASSWORD: bugzera_password
+      DATABASE_NAME: bugzera_development
+      REDIS_URL: redis://redis:6379/1
+      RAILS_ENV: development
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    networks:
+      - bugzera_network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bugzera_frontend
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - bugzera_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  bundle_cache:
+
+networks:
+  bugzera_network:
+    driver: bridge

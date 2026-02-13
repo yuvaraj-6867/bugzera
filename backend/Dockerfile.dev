@@ -1,0 +1,28 @@
+FROM ruby:3.4.4-alpine
+
+# Install dependencies
+RUN apk add --no-cache \
+    build-base \
+    postgresql-dev \
+    sqlite-dev \
+    tzdata \
+    nodejs \
+    yarn \
+    git
+
+# Set working directory
+WORKDIR /app
+
+# Install gems
+COPY Gemfile Gemfile.lock ./
+RUN bundle config set --local deployment 'false' && \
+    bundle install -j4
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Start server
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

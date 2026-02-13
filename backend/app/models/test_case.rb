@@ -11,6 +11,8 @@ class TestCase < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
   has_many :automation_scripts, dependent: :destroy
   has_many :test_case_attachments, dependent: :destroy
+  has_many :test_plan_test_cases, dependent: :destroy
+  has_many :test_plans, through: :test_plan_test_cases
 
   scope :active, -> { where.not(status: 'archived') }
 

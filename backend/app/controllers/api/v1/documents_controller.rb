@@ -1,4 +1,5 @@
 class Api::V1::DocumentsController < ApplicationController
+  skip_before_action :authenticate_request, :check_authorization
   include ProjectAuthorization
   before_action :set_document, only: [:show, :update, :destroy, :download]
 

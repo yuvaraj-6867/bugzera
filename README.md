@@ -1,163 +1,133 @@
-# BugZera - Test Management Platform
+# BugZera - Complete Test Management Platform
 
-A comprehensive test management and bug tracking platform built with React + TypeScript frontend and Ruby on Rails backend.
+[![Backend CI](https://github.com/yuvaraj106/bugzera/workflows/Backend%20CI%2FCD/badge.svg)](https://github.com/yuvaraj106/bugzera/actions)
+[![Frontend CI](https://github.com/yuvaraj106/bugzera/workflows/Frontend%20CI%2FCD/badge.svg)](https://github.com/yuvaraj106/bugzera/actions)
 
-## Tech Stack
+> A comprehensive test management and bug tracking platform built with Rails & React
 
-### Frontend
-- React 18+ with TypeScript
-- Vite for build tooling
-- TailwindCSS for styling
-- React Router for navigation
-- Axios for API calls
-- Zustand for state management
-- React Query for server state
+## 🚀 Features
 
-### Backend
-- Ruby on Rails 7.1 (API mode)
-- PostgreSQL database
-- Redis for caching and background jobs
-- Sidekiq for background processing
-- Devise + JWT for authentication
-- Pundit for authorization
-- Action Cable for WebSockets
+- ✅ **Test Case Management** - Create, organize, and track test cases
+- 🐛 **Bug Tracking** - Comprehensive ticket system
+- 🤖 **Test Automation** - Playwright/Selenium integration
+- 📊 **Analytics** - Real-time testing metrics and reports
+- 🏃 **Sprint Management** - Agile sprint planning
+- 🌍 **Multi-Environment** - Dev, Staging, Production support
+- 📅 **Calendar** - Schedule test runs and events
+- 👥 **User Management** - Role-based access control
 
-## Features
+## 🛠 Tech Stack
 
-- ✅ User authentication and authorization
-- ✅ Project management
-- ✅ Test case creation and management
-- ✅ Test run execution and tracking
-- ✅ Bug/ticket tracking
-- ✅ Real-time updates via WebSocket
-- ✅ Dashboard with analytics
-- ✅ Document management
-- ✅ Calendar and scheduling
-- ✅ Team collaboration
+**Backend:**
+- Ruby 3.4.4
+- Rails 7.1.5
+- PostgreSQL 15
+- Redis 7
+- Sidekiq (Background Jobs)
 
-## Prerequisites
+**Frontend:**
+- React 18
+- TypeScript
+- Vite
+- TailwindCSS
+- React Router
+- Tanstack Query
 
-- Ruby 3.4.4+
-- Node.js 20+
-- PostgreSQL 14+
-- Redis 7+
+**DevOps:**
+- Docker & Docker Compose
+- GitHub Actions CI/CD
+- Nginx (Production)
 
-## Setup Instructions
+## 📦 Quick Start
 
-### 1. Clone the Repository
+### Prerequisites
+- Docker & Docker Compose
+- Git
 
+### Installation
+
+1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/yuvaraj106/bugzera.git
 cd bugzera
 ```
 
-### 2. Backend Setup
-
+2. **Start all services:**
 ```bash
-cd backend
-
-# Install dependencies
-bundle install
-
-# Copy environment file
-cp .env.example .env
-
-# Update .env with your database credentials
-
-# Create and setup database
-rails db:create
-rails db:migrate
-rails db:seed
-
-# Start Rails server
-rails server -p 3000
+docker-compose up -d
 ```
 
-The backend API will be available at `http://localhost:3000`
+3. **Setup database:**
+```bash
+docker-compose exec backend rails db:create db:migrate db:seed
+```
 
-### 3. Frontend Setup
+4. **Access the application:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- Login: admin@bugzera.com / password123
 
+## 🧪 Running Tests
+
+**Backend Tests:**
+```bash
+docker-compose exec backend rspec
+```
+
+**Frontend Tests:**
+```bash
+docker-compose exec frontend npm test
+```
+
+## 📖 API Documentation
+
+API docs available at: `http://localhost:3000/api-docs`
+
+## 🔧 Development
+
+### Backend Development
+```bash
+cd backend
+bundle install
+rails server
+```
+
+### Frontend Development
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Copy environment file
-cp .env.example .env
-
-# Start development server
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`
+## 🚀 Deployment
 
-## Development
+Automated deployment via GitHub Actions on push to `main` branch.
 
-### Running Tests
-
-**Backend:**
+Manual deployment:
 ```bash
-cd backend
-bundle exec rspec
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
-**Frontend:**
-```bash
-cd frontend
-npm run test
-```
+## 🤝 Contributing
 
-### Code Quality
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
-**Backend:**
-```bash
-cd backend
-bundle exec rubocop
-```
+## 📝 License
 
-**Frontend:**
-```bash
-cd frontend
-npm run lint
-```
+MIT License - see LICENSE file
 
-## Project Structure
+## 👨‍💻 Author
 
-```
-bugzera/
-├── backend/              # Rails API
-│   ├── app/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── services/
-│   │   └── serializers/
-│   ├── config/
-│   ├── db/
-│   └── spec/
-├── frontend/             # React App
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── hooks/
-│   │   └── types/
-│   └── public/
-├── docker/               # Docker configurations
-└── docs/                 # Documentation
-```
+**Yuvaraj**
+- GitHub: [@yuvaraj106](https://github.com/yuvaraj106)
+- Email: yuvaraj@drylogics.com
 
-## API Documentation
+## 🙏 Acknowledgments
 
-API documentation is available at `/api-docs` when running the backend server.
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Write tests
-4. Submit a pull request
-
-## License
-
-Copyright © 2026 BugZera. All rights reserved.
+- Rails community
+- React team
+- Docker team

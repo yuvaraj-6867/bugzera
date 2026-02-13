@@ -1,12 +1,13 @@
 class Api::V1::TicketsController < ApplicationController
+  skip_before_action :authenticate_request, :check_authorization
   include ProjectAuthorization
 
   def index
     tickets = Ticket.includes(:assigned_user, :created_by, :sprint)
-    
-    # Apply project access control only for non-admin users
-    unless current_user&.admin?
-      accessible_project_ids = current_user&.projects&.pluck(:id) || []
+
+    # Apply project access control only for non-admin users (skip if no current_user)
+    if current_user && !current_user.admin?
+      accessible_project_ids = current_user.projects.pluck(:id)
       tickets = tickets.where(project_id: accessible_project_ids)
     end
     
@@ -35,9 +36,9 @@ class Api::V1::TicketsController < ApplicationController
 
   def show
     ticket = Ticket.includes(:assigned_user, :created_by, :project).find(params[:id])
-    
-    # Check if user has access to this ticket's project (only for non-admin users)
-    unless current_user&.admin? || current_user&.projects&.include?(ticket.project)
+
+    # Check if user has access to this ticket's project (skip if no current_user)
+    if current_user && !current_user.admin? && !current_user.projects.include?(ticket.project)
       render json: { error: 'Access denied' }, status: :forbidden
       return
     end
@@ -102,8 +103,8 @@ class Api::V1::TicketsController < ApplicationController
       end
     end
     
-    # Check if user has access to create in the specified project
-    unless current_user&.admin? || current_user&.projects&.pluck(:id)&.include?(project_id)
+    # Check if user has access to create in the specified project (skip if no current_user or no project_id)
+    if current_user && project_id && !current_user.admin? && !current_user.projects.pluck(:id).include?(project_id)
       render json: { error: 'Access denied to this project' }, status: :forbidden
       return
     end
@@ -129,8 +130,8 @@ class Api::V1::TicketsController < ApplicationController
     
     Rails.logger.info "Final assigned_user_id: #{assigned_user_id}"
     
-    # Use current user as creator
-    creator_id = current_user&.id
+    # Use current user as creator, or first user if no current_user (auth disabled)
+    creator_id = current_user&.id || User.first&.id
     
     Rails.logger.info "Creator ID: #{creator_id}, Project ID: #{project_id}"
     
@@ -190,9 +191,9 @@ class Api::V1::TicketsController < ApplicationController
 
   def update
     ticket = Ticket.find(params[:id])
-    
-    # Check if user has access to this ticket's project (only for non-admin users)
-    unless current_user&.admin? || current_user&.projects&.include?(ticket.project)
+
+    # Check if user has access to this ticket's project (skip if no current_user)
+    if current_user && !current_user.admin? && !current_user.projects.include?(ticket.project)
       render json: { error: 'Access denied' }, status: :forbidden
       return
     end
@@ -275,9 +276,9 @@ class Api::V1::TicketsController < ApplicationController
 
   def destroy
     ticket = Ticket.find(params[:id])
-    
-    # Check if user has access to this ticket's project (only for non-admin users)
-    unless current_user&.admin? || current_user&.projects&.include?(ticket.project)
+
+    # Check if user has access to this ticket's project (skip if no current_user)
+    if current_user && !current_user.admin? && !current_user.projects.include?(ticket.project)
       render json: { error: 'Access denied' }, status: :forbidden
       return
     end

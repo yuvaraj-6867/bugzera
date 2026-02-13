@@ -3,8 +3,8 @@ class AutomationScript < ApplicationRecord
   validates :script_path, presence: true
   validates :status, inclusion: { in: %w[draft active inactive] }
 
-  belongs_to :test_case
-  belongs_to :user
+  belongs_to :test_case, optional: true
+  belongs_to :user, optional: true
   has_many :test_runs, dependent: :nullify
   has_one_attached :script_file
 

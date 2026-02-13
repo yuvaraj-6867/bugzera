@@ -1,0 +1,62 @@
+name: Docker Compose CI
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'docker-compose.yml'
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/docker-compose-ci.yml'
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          DATABASE_HOST=postgres
+          DATABASE_USER=bugzera
+          DATABASE_PASSWORD=bugzera_password
+          REDIS_URL=redis://redis:6379/0
+          FRONTEND_URL=http://localhost:5173
+          BACKEND_URL=http://localhost:3000
+          EOF
+
+      - name: Build and start services
+        run: |
+          docker-compose up -d --build
+          sleep 30
+
+      - name: Wait for services to be healthy
+        run: |
+          timeout 120 bash -c 'until docker-compose ps | grep -q "healthy"; do sleep 5; done'
+
+      - name: Check backend health
+        run: |
+          curl -f http://localhost:3000/health || exit 1
+
+      - name: Check frontend accessibility
+        run: |
+          curl -f http://localhost:5173 || exit 1
+
+      - name: Run database migrations
+        run: |
+          docker-compose exec -T backend rails db:migrate
+
+      - name: Show container logs
+        if: failure()
+        run: |
+          docker-compose logs
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker-compose down -v

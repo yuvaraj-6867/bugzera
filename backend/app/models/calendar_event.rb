@@ -1,5 +1,5 @@
 class CalendarEvent < ApplicationRecord
-  belongs_to :created_by, class_name: 'User'
+  belongs_to :created_by, class_name: 'User', optional: true
   belongs_to :eventable, polymorphic: true, optional: true
   has_many :comments, as: :commentable, dependent: :destroy
 

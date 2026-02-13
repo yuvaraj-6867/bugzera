@@ -1,5 +1,6 @@
 class Sprint < ApplicationRecord
-  belongs_to :project
+  belongs_to :project, optional: true
+  has_many :tickets
 
   validates :name, presence: true
   validates :start_date, presence: true

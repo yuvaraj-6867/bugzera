@@ -35,31 +35,48 @@ if ActiveRecord::Base.connection.table_exists?(:users)
   User.delete_all
 end
 
+# Admin User
+admin = User.create!(
+  email: 'admin@bugzera.com',
+  password: 'password123',
+  first_name: 'Admin',
+  last_name: 'User',
+  role: 'admin',
+  status: 'active',
+  phone: '+91 9876543210',
+  location: 'Chennai, Tamil Nadu, India',
+  joined_date: Date.current
+)
+
 # QA Manager
-User.create!(
-  email: 'manager@company.com',
-  password: 'yuva123',
+manager = User.create!(
+  email: 'manager@bugzera.com',
+  password: 'password123',
   first_name: 'Yuva',
   last_name: 'Iyer',
   role: 'manager',
   status: 'active',
-  phone: '+91 9876543210',
+  phone: '+91 9876543211',
   location: 'Coimbatore, Tamil Nadu, India',
   joined_date: Date.current
 )
-# Admin
-User.create!(
-  email: 'admin@company.com',
-  password: 'yuva123',
-  first_name: 'Yuva',
-  last_name: 'Nair',
-  role: 'admin',
+
+# Team Member 1
+member1 = User.create!(
+  email: 'raj@bugzera.com',
+  password: 'password123',
+  first_name: 'Raj',
+  last_name: 'Kumar',
+  role: 'member',
   status: 'active',
   phone: '+91 9876543212',
-  location: 'Chennai, Tamil Nadu, India',
+  location: 'Bangalore, Karnataka, India',
   joined_date: Date.current
 )
-puts "Created users:"
-puts "Total users: #{User.count}"
+
+puts "✅ Created #{User.count} users:"
+User.all.each do |user|
+  puts "  - #{user.email} (#{user.role}) - Password: password123"
+end
 
 

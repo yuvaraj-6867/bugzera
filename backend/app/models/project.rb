@@ -7,6 +7,7 @@ class Project < ApplicationRecord
   has_many :users, through: :project_users
   
   validates :name, presence: true
+  validates :status, presence: true
   
   # Default email notifications to true for new projects
   after_initialize :set_defaults

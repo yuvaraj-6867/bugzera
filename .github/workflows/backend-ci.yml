@@ -1,0 +1,106 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: bugzera
+          POSTGRES_PASSWORD: bugzera_password
+          POSTGRES_DB: bugzera_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+          working-directory: backend
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          gem install bundler
+          bundle install --jobs 4 --retry 3
+
+      - name: Setup Database
+        env:
+          RAILS_ENV: test
+          DATABASE_HOST: localhost
+          DATABASE_USER: bugzera
+          DATABASE_PASSWORD: bugzera_password
+        run: |
+          cd backend
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+
+      - name: Run tests
+        env:
+          RAILS_ENV: test
+          DATABASE_HOST: localhost
+          DATABASE_USER: bugzera
+          DATABASE_PASSWORD: bugzera_password
+          REDIS_URL: redis://localhost:6379/1
+        run: |
+          cd backend
+          bundle exec rspec
+
+      - name: Run RuboCop
+        run: |
+          cd backend
+          bundle exec rubocop
+
+      - name: Check security vulnerabilities
+        run: |
+          cd backend
+          bundle exec bundle audit --update
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t bugzera-backend:${{ github.sha }} ./backend
+
+      - name: Test Docker image
+        run: |
+          docker run --rm bugzera-backend:${{ github.sha }} rails --version
