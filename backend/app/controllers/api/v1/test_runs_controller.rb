@@ -1,4 +1,4 @@
-class Api::V1::TestRunsController < ActionController::Base
+class Api::V1::TestRunsController < ApplicationController
   def index
     begin
       test_runs = TestRun.includes(:project, :user).order(created_at: :desc).limit(50)
@@ -24,7 +24,7 @@ class Api::V1::TestRunsController < ActionController::Base
 
   def create
     # Ensure we have valid foreign keys
-    user_id = User.first&.id
+    user_id = current_user.id
     project_id = params.dig(:test_run, :project_id) || Project.first&.id
     
     test_run = TestRun.new(

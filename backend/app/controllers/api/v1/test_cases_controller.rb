@@ -1,5 +1,4 @@
 class Api::V1::TestCasesController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   include ProjectAuthorization
 
   def index
@@ -41,21 +40,7 @@ class Api::V1::TestCasesController < ApplicationController
       render json: { error: 'Access denied' }, status: :forbidden
       return
     end
-    render json: {
-      id: test_case.id,
-      title: test_case.title,
-      description: test_case.description,
-      steps: test_case.steps,
-      expected_results: test_case.expected_results,
-      status: test_case.status,
-      project_id: test_case.project_id,
-      project_name: test_case.project&.name || 'No Project',
-      assigned_user: test_case.assigned_user ? "#{test_case.assigned_user.first_name} #{test_case.assigned_user.last_name}" : 'Unassigned',
-      assigned_user_id: test_case.assigned_user_id,
-      created_by: test_case.created_by ? "#{test_case.created_by.first_name} #{test_case.created_by.last_name}" : nil,
-      created_at: test_case.created_at,
-      updated_at: test_case.updated_at
-    }
+    render json: test_case_json(test_case)
   end
 
   def create
@@ -99,8 +84,7 @@ class Api::V1::TestCasesController < ApplicationController
       assigned_user_id = assigned_user&.id
     end
     
-    # Use current user as creator, or first user if no current_user (auth disabled)
-    creator_id = current_user&.id || User.first&.id
+    creator_id = current_user.id
 
     # If no users exist at all, return error
     if creator_id.nil?
@@ -111,28 +95,14 @@ class Api::V1::TestCasesController < ApplicationController
     test_case = TestCase.new(test_case_params.except(:assigned_user).merge(
       created_by_id: creator_id,
       assigned_user_id: assigned_user_id,
-      steps: params.dig(:test_case, :steps)&.to_json,
+      steps: params.dig(:test_case, :test_steps) || params.dig(:test_case, :steps),
       expected_results: params.dig(:test_case, :expected_results),
       project_id: project_id
     ))
     
     if test_case.save
-      # Reload to get associations
       test_case.reload
-      render json: {
-        id: test_case.id,
-        title: test_case.title,
-        description: test_case.description,
-        steps: test_case.steps,
-        expected_results: test_case.expected_results,
-        status: test_case.status,
-        project_id: test_case.project_id,
-        project_name: test_case.project&.name || 'No Project',
-        assigned_user: test_case.assigned_user ? "#{test_case.assigned_user.first_name} #{test_case.assigned_user.last_name}" : 'Unassigned',
-        created_by: test_case.created_by ? "#{test_case.created_by.first_name} #{test_case.created_by.last_name}" : nil,
-        created_at: test_case.created_at,
-        updated_at: test_case.updated_at
-      }, status: :created
+      render json: test_case_json(test_case), status: :created
     else
       render json: { errors: test_case.errors }, status: :unprocessable_entity
     end
@@ -165,6 +135,10 @@ class Api::V1::TestCasesController < ApplicationController
       assigned_user_id: assigned_user_id,
       project_id: project_id
     )
+    # Map test_steps from frontend to steps column
+    if params.dig(:test_case, :test_steps).present?
+      update_params[:steps] = params.dig(:test_case, :test_steps)
+    end
     
     old_status = test_case.status
     
@@ -177,20 +151,7 @@ class Api::V1::TestCasesController < ApplicationController
       end
       
       test_case.reload
-      render json: {
-        id: test_case.id,
-        title: test_case.title,
-        description: test_case.description,
-        steps: test_case.steps,
-        expected_results: test_case.expected_results,
-        status: test_case.status,
-        project_id: test_case.project_id,
-        project_name: test_case.project&.name || 'No Project',
-        assigned_user: test_case.assigned_user ? "#{test_case.assigned_user.first_name} #{test_case.assigned_user.last_name}" : 'Unassigned',
-        created_by: test_case.created_by ? "#{test_case.created_by.first_name} #{test_case.created_by.last_name}" : nil,
-        created_at: test_case.created_at,
-        updated_at: test_case.updated_at
-      }
+      render json: test_case_json(test_case)
     else
       render json: { errors: test_case.errors }, status: :unprocessable_entity
     end
@@ -212,7 +173,33 @@ class Api::V1::TestCasesController < ApplicationController
   private
 
   def test_case_params
-    params.require(:test_case).permit(:title, :description, :status, :steps, :expected_results, :project_id, :assigned_user, :created_by_id)
+    params.require(:test_case).permit(:title, :description, :status, :steps, :expected_results, :project_id, :assigned_user, :created_by_id, :priority, :test_type, :preconditions, :test_data, :post_conditions, :automation_status, :estimated_duration, :tags)
+  end
+
+  def test_case_json(test_case)
+    {
+      id: test_case.id,
+      title: test_case.title,
+      description: test_case.description,
+      preconditions: test_case.preconditions,
+      test_steps: test_case.steps,
+      expected_results: test_case.expected_results,
+      test_data: test_case.test_data,
+      post_conditions: test_case.post_conditions,
+      status: test_case.status,
+      priority: test_case.priority,
+      test_type: test_case.test_type,
+      automation_status: test_case.automation_status,
+      estimated_duration: test_case.estimated_duration,
+      tags: test_case.tags,
+      project_id: test_case.project_id,
+      project_name: test_case.project&.name || 'No Project',
+      assigned_user: test_case.assigned_user ? "#{test_case.assigned_user.first_name} #{test_case.assigned_user.last_name}" : 'Unassigned',
+      assigned_user_id: test_case.assigned_user_id,
+      created_by: test_case.created_by ? "#{test_case.created_by.first_name} #{test_case.created_by.last_name}" : nil,
+      created_at: test_case.created_at,
+      updated_at: test_case.updated_at
+    }
   end
 
 

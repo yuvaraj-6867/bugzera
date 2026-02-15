@@ -1,5 +1,4 @@
 class Api::V1::TicketsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   include ProjectAuthorization
 
   def index
@@ -35,7 +34,7 @@ class Api::V1::TicketsController < ApplicationController
   end
 
   def show
-    ticket = Ticket.includes(:assigned_user, :created_by, :project).find(params[:id])
+    ticket = Ticket.includes(:assigned_user, :created_by, :project, :sprint).find(params[:id])
 
     # Check if user has access to this ticket's project (skip if no current_user)
     if current_user && !current_user.admin? && !current_user.projects.include?(ticket.project)
@@ -67,6 +66,8 @@ class Api::V1::TicketsController < ApplicationController
       severity: ticket.severity,
       project_id: ticket.project_id,
       project_name: ticket.project&.name,
+      sprint_id: ticket.sprint_id,
+      sprint_name: ticket.sprint&.name,
       assigned_user: assigned_user_name,
       assigned_user_id: ticket.assigned_user_id,
       created_by: created_by_name,
@@ -130,13 +131,18 @@ class Api::V1::TicketsController < ApplicationController
     
     Rails.logger.info "Final assigned_user_id: #{assigned_user_id}"
     
-    # Use current user as creator, or first user if no current_user (auth disabled)
-    creator_id = current_user&.id || User.first&.id
+    creator_id = current_user.id
     
     Rails.logger.info "Creator ID: #{creator_id}, Project ID: #{project_id}"
     
     sprint_id = params.dig(:ticket, :sprint_id)
     sprint_id = sprint_id.present? ? sprint_id.to_i : nil
+
+    # Default to active sprint if no sprint selected
+    if sprint_id.nil?
+      active_sprint = Sprint.find_by(status: 'active')
+      sprint_id = active_sprint&.id
+    end
 
     ticket = Ticket.new(ticket_params.except(:assigned_user, :attachments).merge(
       created_by_id: creator_id,
@@ -263,6 +269,8 @@ class Api::V1::TicketsController < ApplicationController
         status: ticket.status,
         severity: ticket.severity,
         project_id: ticket.project_id,
+        sprint_id: ticket.sprint_id,
+        sprint_name: ticket.sprint&.name,
         assigned_user: ticket.assigned_user ? "#{ticket.assigned_user.first_name} #{ticket.assigned_user.last_name}" : 'Unassigned',
         created_by: ticket.created_by ? "#{ticket.created_by.first_name} #{ticket.created_by.last_name}" : nil,
         attachments: all_attachments,

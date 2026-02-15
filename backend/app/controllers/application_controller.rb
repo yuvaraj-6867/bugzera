@@ -51,17 +51,26 @@ class ApplicationController < ActionController::API
   def controller_to_feature(controller)
     mapping = {
       'dashboard' => 'dashboard',
+      'projects' => 'projects',
       'test_cases' => 'test-cases',
+      'test_case_attachments' => 'test-cases',
       'automation_scripts' => 'automation',
       'tickets' => 'tickets',
       'documents' => 'documents',
       'document_imports' => 'documents',
-      'sprints' => 'dashboard',
+      'sprints' => 'sprints',
+      'environments' => 'environments',
+      'test_data_sets' => 'test-data',
+      'calendar_events' => 'calendar',
+      'articles' => 'knowledge-base',
+      'integrations' => 'integrations',
       'analytics' => 'analytics',
-      'users' => 'dashboard',
+      'users' => 'users',
       'user_invitations' => 'users',
+      'test_runs' => 'test-cases',
+      'test_plans' => 'test-cases',
       'video_analyses' => 'video-analysis',
-      'settings' => 'dashboard'
+      'settings' => 'settings'
     }
     mapping[controller]
   end

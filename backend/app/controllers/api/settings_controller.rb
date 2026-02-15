@@ -1,6 +1,4 @@
 class Api::SettingsController < ApplicationController
-  before_action :authenticate_user!
-
   def show
     render json: {
       appearance: {
@@ -49,12 +47,4 @@ class Api::SettingsController < ApplicationController
                                      :email_notifications, :compact_view)
   end
 
-  def authenticate_user!
-    # Placeholder - implement your authentication logic
-    @current_user ||= User.first
-  end
-
-  def current_user
-    @current_user
-  end
 end

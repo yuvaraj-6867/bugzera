@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 
-const TestCases = () => {
+const TestCases = ({ projectId }: { projectId?: string }) => {
   const [showModal, setShowModal] = useState(false)
   const [testCases, setTestCases] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
@@ -28,7 +28,10 @@ const TestCases = () => {
   const fetchTestCases = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3000/api/v1/test_cases', {
+      const url = projectId
+        ? `http://localhost:3000/api/v1/test_cases?project_id=${projectId}`
+        : 'http://localhost:3000/api/v1/test_cases'
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -46,7 +49,7 @@ const TestCases = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId])
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -102,7 +105,8 @@ const TestCases = () => {
             assigned_user: formData.assignedTo || null,
             automation_status: formData.automationStatus,
             estimated_duration: formData.estimatedDuration ? parseInt(formData.estimatedDuration) : null,
-            tags: formData.tags
+            tags: formData.tags,
+            project_id: projectId || null
           }
         })
       })
@@ -185,7 +189,8 @@ const TestCases = () => {
             post_conditions: editFormData.post_conditions,
             automation_status: editFormData.automation_status,
             estimated_duration: editFormData.estimated_duration ? parseInt(editFormData.estimated_duration) : null,
-            tags: editFormData.tags
+            tags: editFormData.tags,
+            assigned_user: editFormData.assigned_user
           }
         })
       })
@@ -359,16 +364,16 @@ const TestCases = () => {
                 {/* Classification */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="form-label">Status</label>
-                    <select name="status" value={formData.status} onChange={handleChange} className="form-select">
+                    <label className="form-label">Status *</label>
+                    <select name="status" value={formData.status} onChange={handleChange} className="form-select" required>
                       <option value="draft">Draft</option>
                       <option value="active">Active</option>
                       <option value="archived">Archived</option>
                     </select>
                   </div>
                   <div>
-                    <label className="form-label">Priority</label>
-                    <select name="priority" value={formData.priority} onChange={handleChange} className="form-select">
+                    <label className="form-label">Priority *</label>
+                    <select name="priority" value={formData.priority} onChange={handleChange} className="form-select" required>
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
@@ -376,8 +381,8 @@ const TestCases = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="form-label">Test Type</label>
-                    <select name="testType" value={formData.testType} onChange={handleChange} className="form-select">
+                    <label className="form-label">Test Type *</label>
+                    <select name="testType" value={formData.testType} onChange={handleChange} className="form-select" required>
                       <option value="functional">Functional</option>
                       <option value="regression">Regression</option>
                       <option value="smoke">Smoke</option>
@@ -416,7 +421,7 @@ const TestCases = () => {
                     <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="form-select">
                       <option value="">Unassigned</option>
                       {users.map(user => (
-                        <option key={user.id} value={user.id}>
+                        <option key={user.id} value={`${user.first_name} ${user.last_name}`}>
                           {user.first_name} {user.last_name}
                         </option>
                       ))}
@@ -433,10 +438,22 @@ const TestCases = () => {
                 </div>
 
                 {/* Additional Fields */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="form-label">Estimated Duration (min)</label>
-                    <input type="number" name="estimatedDuration" value={formData.estimatedDuration} onChange={handleChange} className="form-input" placeholder="30" />
+                    <label className="form-label">Est. Hours</label>
+                    <input type="number" min="0" value={formData.estimatedDuration ? Math.floor(parseInt(formData.estimatedDuration) / 60) : ''} onChange={(e) => {
+                      const hours = parseInt(e.target.value) || 0
+                      const mins = formData.estimatedDuration ? parseInt(formData.estimatedDuration) % 60 : 0
+                      setFormData(prev => ({ ...prev, estimatedDuration: String(hours * 60 + mins) }))
+                    }} className="form-input" placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="form-label">Est. Minutes</label>
+                    <input type="number" min="0" max="59" value={formData.estimatedDuration ? parseInt(formData.estimatedDuration) % 60 : ''} onChange={(e) => {
+                      const mins = parseInt(e.target.value) || 0
+                      const hours = formData.estimatedDuration ? Math.floor(parseInt(formData.estimatedDuration) / 60) : 0
+                      setFormData(prev => ({ ...prev, estimatedDuration: String(hours * 60 + mins) }))
+                    }} className="form-input" placeholder="0" />
                   </div>
                   <div>
                     <label className="form-label">Tags</label>
@@ -559,7 +576,7 @@ const TestCases = () => {
                   </div>
                   <div>
                     <label className="form-label text-gray-500">Estimated Duration</label>
-                    <p className="text-sm text-gray-900">{selectedTestCase.estimated_duration ? `${selectedTestCase.estimated_duration} min` : '-'}</p>
+                    <p className="text-sm text-gray-900">{selectedTestCase.estimated_duration ? (selectedTestCase.estimated_duration >= 60 ? `${Math.floor(selectedTestCase.estimated_duration / 60)}h ${selectedTestCase.estimated_duration % 60}m` : `${selectedTestCase.estimated_duration}m`) : '-'}</p>
                   </div>
                   <div>
                     <label className="form-label text-gray-500">Tags</label>
@@ -577,8 +594,8 @@ const TestCases = () => {
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="form-label">Title</label>
-                    <input type="text" name="title" value={editFormData.title} onChange={handleEditChange} className="form-input" />
+                    <label className="form-label">Title *</label>
+                    <input type="text" name="title" value={editFormData.title} onChange={handleEditChange} className="form-input" required />
                   </div>
                   <div>
                     <label className="form-label">Description</label>
@@ -586,8 +603,8 @@ const TestCases = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="form-label">Status</label>
-                      <select name="status" value={editFormData.status} onChange={handleEditChange} className="form-select">
+                      <label className="form-label">Status *</label>
+                      <select name="status" value={editFormData.status} onChange={handleEditChange} className="form-select" required>
                         <option value="draft">Draft</option>
                         <option value="active">Active</option>
                         <option value="passed">Passed</option>
@@ -596,8 +613,8 @@ const TestCases = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label">Priority</label>
-                      <select name="priority" value={editFormData.priority} onChange={handleEditChange} className="form-select">
+                      <label className="form-label">Priority *</label>
+                      <select name="priority" value={editFormData.priority} onChange={handleEditChange} className="form-select" required>
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
@@ -605,8 +622,8 @@ const TestCases = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label">Test Type</label>
-                      <select name="test_type" value={editFormData.test_type} onChange={handleEditChange} className="form-select">
+                      <label className="form-label">Test Type *</label>
+                      <select name="test_type" value={editFormData.test_type} onChange={handleEditChange} className="form-select" required>
                         <option value="functional">Functional</option>
                         <option value="regression">Regression</option>
                         <option value="smoke">Smoke</option>
@@ -620,12 +637,12 @@ const TestCases = () => {
                     <textarea name="preconditions" value={editFormData.preconditions} onChange={handleEditChange} className="form-textarea" rows={2}></textarea>
                   </div>
                   <div>
-                    <label className="form-label">Test Steps</label>
-                    <textarea name="test_steps" value={editFormData.test_steps} onChange={handleEditChange} className="form-textarea" rows={4}></textarea>
+                    <label className="form-label">Test Steps *</label>
+                    <textarea name="test_steps" value={editFormData.test_steps} onChange={handleEditChange} className="form-textarea" rows={4} required></textarea>
                   </div>
                   <div>
-                    <label className="form-label">Expected Results</label>
-                    <textarea name="expected_results" value={editFormData.expected_results} onChange={handleEditChange} className="form-textarea" rows={3}></textarea>
+                    <label className="form-label">Expected Results *</label>
+                    <textarea name="expected_results" value={editFormData.expected_results} onChange={handleEditChange} className="form-textarea" rows={3} required></textarea>
                   </div>
                   <div>
                     <label className="form-label">Test Data</label>
@@ -638,7 +655,14 @@ const TestCases = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="form-label">Assigned User</label>
-                      <input type="text" name="assigned_user" value={editFormData.assigned_user} onChange={handleEditChange} className="form-input" />
+                      <select name="assigned_user" value={editFormData.assigned_user} onChange={handleEditChange} className="form-select">
+                        <option value="">Unassigned</option>
+                        {users.map(user => (
+                          <option key={user.id} value={`${user.first_name} ${user.last_name}`}>
+                            {user.first_name} {user.last_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="form-label">Automation Status</label>
@@ -649,10 +673,22 @@ const TestCases = () => {
                       </select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="form-label">Estimated Duration (min)</label>
-                      <input type="number" name="estimated_duration" value={editFormData.estimated_duration} onChange={handleEditChange} className="form-input" />
+                      <label className="form-label">Hours</label>
+                      <input type="number" min="0" value={editFormData.estimated_duration ? Math.floor(editFormData.estimated_duration / 60) : 0} onChange={(e) => {
+                        const hours = parseInt(e.target.value) || 0
+                        const mins = (editFormData.estimated_duration || 0) % 60
+                        setEditFormData((prev: any) => ({ ...prev, estimated_duration: hours * 60 + mins }))
+                      }} className="form-input" placeholder="0" />
+                    </div>
+                    <div>
+                      <label className="form-label">Minutes</label>
+                      <input type="number" min="0" max="59" value={editFormData.estimated_duration ? editFormData.estimated_duration % 60 : 0} onChange={(e) => {
+                        const mins = parseInt(e.target.value) || 0
+                        const hours = Math.floor((editFormData.estimated_duration || 0) / 60)
+                        setEditFormData((prev: any) => ({ ...prev, estimated_duration: hours * 60 + mins }))
+                      }} className="form-input" placeholder="0" />
                     </div>
                     <div>
                       <label className="form-label">Tags</label>

@@ -59,19 +59,24 @@ const ProjectDetails = () => {
     )
   }
 
-  const tabs = [
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const userRole = user.role || 'member'
+
+  const allTabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'test-cases', label: 'Test Cases' },
     { id: 'test-plans', label: 'Test Plans' },
     { id: 'test-runs', label: 'Test Runs' },
     { id: 'tickets', label: 'Tickets' },
     { id: 'sprints', label: 'Sprints' },
-    { id: 'documents', label: 'Documents' },
+    { id: 'documents', label: 'Documents', roles: ['manager', 'admin'] },
     { id: 'calendar', label: 'Calendar' },
-    { id: 'environments', label: 'Environments' },
-    { id: 'automation', label: 'Automation' },
-    { id: 'test-data', label: 'Test Data' },
+    { id: 'environments', label: 'Environments', roles: ['manager', 'admin'] },
+    { id: 'automation', label: 'Automation', roles: ['admin'] },
+    { id: 'test-data', label: 'Test Data', roles: ['manager', 'admin'] },
   ]
+
+  const tabs = allTabs.filter(tab => !tab.roles || tab.roles.includes(userRole))
 
   return (
     <div className="min-h-screen bg-[#FAFBFC]">
@@ -106,11 +111,11 @@ const ProjectDetails = () => {
       {/* Tab Content */}
       <div className="p-8">
         {activeTab === 'overview' && <OverviewTab project={project} onProjectUpdated={(updatedProject: any) => setProject(updatedProject)} />}
-        {activeTab === 'test-cases' && <TestCases />}
+        {activeTab === 'test-cases' && <TestCases projectId={projectId} />}
         {activeTab === 'test-plans' && <TestPlans />}
         {activeTab === 'test-runs' && <TestRuns />}
-        {activeTab === 'tickets' && <Tickets />}
-        {activeTab === 'sprints' && <Sprints />}
+        {activeTab === 'tickets' && <Tickets projectId={projectId} />}
+        {activeTab === 'sprints' && <Sprints projectId={projectId} />}
         {activeTab === 'documents' && <Documents />}
         {activeTab === 'calendar' && <Calendar />}
         {activeTab === 'environments' && <Environments />}

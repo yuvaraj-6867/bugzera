@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import MainLayout from './components/layout/MainLayout'
 import PrivateRoute from './components/auth/PrivateRoute'
@@ -25,6 +25,14 @@ import Documents from './pages/Documents/Documents'
 
 const queryClient = new QueryClient()
 
+const RoleRoute = ({ roles }: { roles: string[] }) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  if (!roles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return <Outlet />
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -37,25 +45,34 @@ function App() {
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route element={<MainLayout />}>
+              {/* All roles */}
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:projectId" element={<ProjectDetails />} />
-              <Route path="/users" element={<Users />} />
               <Route path="/tickets" element={<Tickets />} />
               <Route path="/sprints" element={<Sprints />} />
               <Route path="/test-cases" element={<TestCases />} />
               <Route path="/test-plans" element={<TestPlans />} />
-              <Route path="/automation" element={<Automation />} />
-              <Route path="/environments" element={<Environments />} />
-              <Route path="/test-data" element={<TestData />} />
               <Route path="/test-runs" element={<TestRuns />} />
               <Route path="/calendar" element={<CalendarEvents />} />
-              <Route path="/documents" element={<Documents />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/analytics" element={<Analytics />} />
               <Route path="/activity" element={<Activity />} />
-              <Route path="/integrations" element={<Integrations />} />
-              <Route path="/knowledge-base" element={<KnowledgeBase />} />
+
+              {/* Manager + Admin */}
+              <Route element={<RoleRoute roles={['manager', 'admin']} />}>
+                <Route path="/documents" element={<Documents />} />
+                <Route path="/environments" element={<Environments />} />
+                <Route path="/test-data" element={<TestData />} />
+                <Route path="/integrations" element={<Integrations />} />
+                <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              </Route>
+
+              {/* Admin only */}
+              <Route element={<RoleRoute roles={['admin']} />}>
+                <Route path="/automation" element={<Automation />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/users" element={<Users />} />
+              </Route>
             </Route>
           </Route>
         </Routes>

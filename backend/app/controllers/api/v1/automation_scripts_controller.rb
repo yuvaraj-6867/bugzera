@@ -1,5 +1,4 @@
 class Api::V1::AutomationScriptsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   before_action :set_automation_script, only: [:show, :update, :destroy, :execute]
 
   def index
@@ -22,8 +21,7 @@ class Api::V1::AutomationScriptsController < ApplicationController
 
   def create
     @automation_script = AutomationScript.new(script_params)
-    # Use current user or first user if auth disabled
-    @automation_script.user = current_user || User.first
+    @automation_script.user = current_user
 
     if @automation_script.save
       render json: { automation_script: script_json(@automation_script) }, status: :created

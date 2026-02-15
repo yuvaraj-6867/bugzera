@@ -1,5 +1,4 @@
 class Api::V1::UserInvitationsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   
   def index
     invitations = UserInvitation.includes(:invited_by).order(created_at: :desc)
@@ -16,8 +15,7 @@ class Api::V1::UserInvitationsController < ApplicationController
   def create
     Rails.logger.info "Creating invitation with params: #{params.inspect}"
     
-    # Use first user as inviter for testing
-    inviter = current_user || User.first
+    inviter = current_user
     
     invitation = UserInvitation.create!(
       email: params[:email],

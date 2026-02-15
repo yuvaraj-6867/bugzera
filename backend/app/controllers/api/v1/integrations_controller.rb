@@ -1,5 +1,4 @@
 class Api::V1::IntegrationsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   before_action :set_integration, only: [:show, :update, :destroy]
 
   def index

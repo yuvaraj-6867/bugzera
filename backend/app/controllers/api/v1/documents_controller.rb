@@ -1,5 +1,5 @@
 class Api::V1::DocumentsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
+  # Auth enabled - permissions based on user role (manager/admin can access documents)
   include ProjectAuthorization
   before_action :set_document, only: [:show, :update, :destroy, :download]
 
@@ -50,9 +50,8 @@ class Api::V1::DocumentsController < ApplicationController
       file.write(uploaded_file.read)
     end
 
-    # Get valid user_id
-    user_id = params[:user_id] || User.first&.id
-    return render json: { error: 'No users found' }, status: :unprocessable_entity unless user_id
+    # Use authenticated user
+    user_id = current_user.id
 
     @document = Document.new(
       title: params[:title] || uploaded_file.original_filename,
@@ -62,7 +61,8 @@ class Api::V1::DocumentsController < ApplicationController
       file_size: uploaded_file.size,
       version: '1.0',
       user_id: user_id,
-      project_id: params[:project_id]
+      project_id: params[:project_id],
+      tags: params[:tag_list]
     )
 
     if @document.save
@@ -123,7 +123,7 @@ class Api::V1::DocumentsController < ApplicationController
   end
 
   def document_params
-    params.require(:document).permit(:title, :description, :folder_id, :project_id, :file, tag_list: [])
+    params.require(:document).permit(:title, :description, :folder_id, :project_id, :file, :tags, tag_list: [])
   end
 
   def document_json(document)

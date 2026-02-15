@@ -46,12 +46,10 @@ class User < ApplicationRecord
   # Permission methods
   def can_access?(feature)
     permissions = {
-      'member' => %w[dashboard test-cases tickets],
-      'manager' => %w[dashboard test-cases tickets documents],
-      'admin' => %w[dashboard projects test-cases automation tickets documents analytics users test-run-history]
+      'member' => %w[dashboard projects test-cases tickets sprints calendar settings],
+      'manager' => %w[dashboard projects test-cases tickets sprints documents environments test-data calendar knowledge-base integrations settings],
+      'admin' => %w[dashboard projects test-cases tickets sprints documents automation environments test-data calendar knowledge-base integrations analytics users video-analysis settings test-run-history]
     }
-    # All users can access dashboard
-    return true if feature.to_s == 'dashboard'
     permissions[role]&.include?(feature.to_s) || false
   end
 

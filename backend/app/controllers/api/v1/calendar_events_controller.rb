@@ -1,5 +1,4 @@
 class Api::V1::CalendarEventsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   before_action :set_calendar_event, only: [:show, :update, :destroy]
 
   def index
@@ -16,8 +15,7 @@ class Api::V1::CalendarEventsController < ApplicationController
 
   def create
     @event = CalendarEvent.new(event_params)
-    # Use current user or first user if auth disabled
-    @event.created_by = current_user || User.first
+    @event.created_by = current_user
 
     if @event.save
       render json: event_json(@event), status: :created

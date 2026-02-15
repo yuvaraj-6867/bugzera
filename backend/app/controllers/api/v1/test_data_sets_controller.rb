@@ -1,5 +1,4 @@
 class Api::V1::TestDataSetsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   before_action :set_test_data_set, only: [:show, :update, :destroy]
 
   def index

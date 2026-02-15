@@ -17,16 +17,22 @@ const Sidebar = () => {
     alert('✅ Logged out successfully!')
   }
 
-  const navItems = [
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const userRole = user.role || 'member'
+
+  const allNavItems = [
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/projects', label: 'Projects' },
-    { path: '/users', label: 'Users' },
-    { path: '/analytics', label: 'Analytics' },
+    { path: '/documents', label: 'Documents', roles: ['manager', 'admin'] },
+    { path: '/users', label: 'Users', roles: ['admin'] },
+    { path: '/analytics', label: 'Analytics', roles: ['admin'] },
     { path: '/activity', label: 'Activity Feed' },
-    { path: '/integrations', label: 'Integrations' },
-    { path: '/knowledge-base', label: 'Knowledge Base' },
+    { path: '/integrations', label: 'Integrations', roles: ['manager', 'admin'] },
+    { path: '/knowledge-base', label: 'Knowledge Base', roles: ['manager', 'admin'] },
     { path: '/settings', label: 'Settings' },
   ]
+
+  const navItems = allNavItems.filter(item => !item.roles || item.roles.includes(userRole))
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 fixed left-0 top-0 h-screen overflow-y-auto p-4">

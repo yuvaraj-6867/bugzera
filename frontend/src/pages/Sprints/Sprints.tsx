@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 
-const Sprints = () => {
+const Sprints = ({ projectId }: { projectId?: string }) => {
   const [showModal, setShowModal] = useState(false)
   const [sprints, setSprints] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -12,7 +12,7 @@ const Sprints = () => {
     description: '',
     startDate: '',
     endDate: '',
-    status: 'planned',
+    status: 'active',
     sprintGoal: '',
     team: '',
     capacity: '',
@@ -26,7 +26,10 @@ const Sprints = () => {
   const fetchSprints = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3000/api/v1/sprints', {
+      const url = projectId
+        ? `http://localhost:3000/api/v1/sprints?project_id=${projectId}`
+        : 'http://localhost:3000/api/v1/sprints'
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -44,7 +47,7 @@ const Sprints = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId])
 
   useEffect(() => {
     fetchSprints()
@@ -77,7 +80,7 @@ const Sprints = () => {
             end_date: formData.endDate,
             status: formData.status,
             sprint_goal: formData.sprintGoal,
-            project_id: null,
+            project_id: projectId || null,
             team: formData.team,
             capacity: formData.capacity ? parseInt(formData.capacity) : null,
             target_velocity: formData.targetVelocity ? parseFloat(formData.targetVelocity) : null,
@@ -100,7 +103,7 @@ const Sprints = () => {
         description: '',
         startDate: '',
         endDate: '',
-        status: 'planned',
+        status: 'active',
         sprintGoal: '',
         team: '',
         capacity: '',
@@ -520,8 +523,8 @@ const Sprints = () => {
               ) : (
                 <form className="space-y-4">
                   <div>
-                    <label className="form-label">Name</label>
-                    <input type="text" name="name" value={editFormData.name || ''} onChange={handleEditChange} className="form-input" />
+                    <label className="form-label">Name *</label>
+                    <input type="text" name="name" value={editFormData.name || ''} onChange={handleEditChange} className="form-input" required />
                   </div>
                   <div>
                     <label className="form-label">Description</label>
@@ -529,17 +532,17 @@ const Sprints = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="form-label">Start Date</label>
-                      <input type="date" name="start_date" value={editFormData.start_date || ''} onChange={handleEditChange} className="form-input" />
+                      <label className="form-label">Start Date *</label>
+                      <input type="date" name="start_date" value={editFormData.start_date || ''} onChange={handleEditChange} className="form-input" required />
                     </div>
                     <div>
-                      <label className="form-label">End Date</label>
-                      <input type="date" name="end_date" value={editFormData.end_date || ''} onChange={handleEditChange} className="form-input" />
+                      <label className="form-label">End Date *</label>
+                      <input type="date" name="end_date" value={editFormData.end_date || ''} onChange={handleEditChange} className="form-input" required />
                     </div>
                   </div>
                   <div>
-                    <label className="form-label">Status</label>
-                    <select name="status" value={editFormData.status || 'planned'} onChange={handleEditChange} className="form-select">
+                    <label className="form-label">Status *</label>
+                    <select name="status" value={editFormData.status || 'planned'} onChange={handleEditChange} className="form-select" required>
                       <option value="planned">Planned</option>
                       <option value="active">Active</option>
                       <option value="completed">Completed</option>

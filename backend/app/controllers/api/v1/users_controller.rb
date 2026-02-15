@@ -1,5 +1,4 @@
 class Api::V1::UsersController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
   before_action :set_cors_headers
 
   def current
@@ -7,9 +6,7 @@ class Api::V1::UsersController < ApplicationController
     token = request.headers['Authorization']&.gsub('Bearer ', '')
     user_id = token&.match(/fake_token_(\d+)/)&.[](1)
     
-    # Try to find user by token ID, fallback to first user if not found
-    user = user_id ? User.find_by(id: user_id) : nil
-    user ||= User.first
+    user = user_id ? User.find_by(id: user_id) : current_user
     
     if user
       render json: {

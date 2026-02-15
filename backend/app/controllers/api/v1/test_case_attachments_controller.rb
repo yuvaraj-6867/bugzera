@@ -1,6 +1,4 @@
 class Api::V1::TestCaseAttachmentsController < ApplicationController
-  skip_before_action :authenticate_request
-  skip_before_action :check_authorization
   before_action :set_test_case
   before_action :set_attachment, only: [:show, :destroy]
 

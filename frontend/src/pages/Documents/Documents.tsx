@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import * as XLSX from 'xlsx'
 
 const Documents = () => {
   const [showModal, setShowModal] = useState(false)
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null)
+  const [excelData, setExcelData] = useState<{ headers: string[]; rows: string[][] } | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -133,6 +136,46 @@ const Documents = () => {
     }
   }
 
+  const isImageFile = (name: string) => /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(name)
+  const isVideoFile = (name: string) => /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(name)
+  const isPdfFile = (name: string) => /\.pdf$/i.test(name)
+  const isExcelFile = (name: string) => /\.(xlsx|xls|csv)$/i.test(name)
+
+  const getFileType = (name: string) => {
+    const ext = name.split('.').pop()?.toLowerCase() || ''
+    if (isImageFile(name)) return { label: 'Image', color: 'bg-purple-100 text-purple-800' }
+    if (isVideoFile(name)) return { label: 'Video', color: 'bg-pink-100 text-pink-800' }
+    if (isPdfFile(name)) return { label: 'PDF', color: 'bg-red-100 text-red-800' }
+    if (isExcelFile(name)) return { label: ext.toUpperCase(), color: 'bg-green-100 text-green-800' }
+    if (/\.(doc|docx)$/i.test(name)) return { label: 'DOC', color: 'bg-blue-100 text-blue-800' }
+    if (/\.(ppt|pptx)$/i.test(name)) return { label: 'PPT', color: 'bg-orange-100 text-orange-800' }
+    if (/\.(txt|md)$/i.test(name)) return { label: 'TXT', color: 'bg-gray-100 text-gray-800' }
+    if (/\.(zip|rar|7z|tar|gz)$/i.test(name)) return { label: 'Archive', color: 'bg-yellow-100 text-yellow-800' }
+    return { label: ext.toUpperCase() || 'File', color: 'bg-gray-100 text-gray-800' }
+  }
+
+  const openPreview = async (url: string, name: string) => {
+    const type = isImageFile(name) ? 'image' : isVideoFile(name) ? 'video' : isPdfFile(name) ? 'pdf' : isExcelFile(name) ? 'excel' : 'other'
+    setExcelData(null)
+    setPreviewFile({ url, name, type })
+    if (type === 'excel') {
+      try {
+        const response = await fetch(url)
+        const arrayBuffer = await response.arrayBuffer()
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        const jsonData = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
+        if (jsonData.length > 0) {
+          const headers = (jsonData[0] as string[]).map(h => String(h ?? ''))
+          const rows = jsonData.slice(1).map(row => (row as string[]).map(cell => String(cell ?? '')))
+          setExcelData({ headers, rows })
+        }
+      } catch (error) {
+        console.error('Error parsing Excel:', error)
+      }
+    }
+  }
+
   return (
     <div>
       <div className="flex justify-between items-start mb-8">
@@ -180,47 +223,114 @@ const Documents = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {documents.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{doc.title}</div>
-                      {doc.description && (
-                        <div className="text-sm text-gray-500 truncate max-w-md">{doc.description}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-wrap gap-1">
-                        {doc.tags?.map((tag: string, index: number) => (
-                          <span key={index} className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {doc.file_size}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {doc.uploaded_by}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      v{doc.version}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(doc.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleDownload(doc.id, doc.title)}
-                        className="text-blue-600 hover:text-blue-900 font-medium"
-                      >
-                        Download
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {documents.map((doc) => {
+                  const fileType = getFileType(doc.title)
+                  return (
+                    <tr key={doc.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                          {doc.description && (
+                            <div className="text-sm text-gray-500 truncate max-w-md">{doc.description}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {doc.tags?.map((tag: string, index: number) => (
+                            <span key={index} className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {tag}
+                            </span>
+                          )) || <span className="text-sm text-gray-400">-</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {doc.file_size}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {doc.uploaded_by}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        v{doc.version}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => openPreview(`http://localhost:3000${doc.file_url}`, doc.title)}
+                            className="text-green-600 hover:text-green-900 font-medium"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleDownload(doc.id, doc.title)}
+                            className="text-blue-600 hover:text-blue-900 font-medium"
+                          >
+                            Download
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center" onClick={() => setPreviewFile(null)}>
+          <div className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-white text-sm font-medium truncate max-w-[400px]">{previewFile.name}</span>
+              <a href={previewFile.url} download={previewFile.name} target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white text-xs bg-white/20 px-3 py-1 rounded-full">
+                Download
+              </a>
+              <button className="text-white/70 hover:text-white text-2xl leading-none" onClick={() => setPreviewFile(null)}>x</button>
+            </div>
+            {previewFile.type === 'image' ? (
+              <img src={previewFile.url} alt={previewFile.name} className="max-w-[85vw] max-h-[80vh] object-contain rounded-lg shadow-2xl" />
+            ) : previewFile.type === 'video' ? (
+              <video src={previewFile.url} controls autoPlay className="max-w-[85vw] max-h-[80vh] rounded-lg shadow-2xl bg-black" />
+            ) : previewFile.type === 'pdf' ? (
+              <iframe src={previewFile.url} className="w-[80vw] h-[80vh] rounded-lg bg-white" title={previewFile.name} />
+            ) : previewFile.type === 'excel' ? (
+              <div className="bg-white rounded-lg shadow-2xl max-w-[85vw] max-h-[80vh] overflow-auto">
+                {excelData ? (
+                  <table className="min-w-full border-collapse">
+                    <thead className="bg-green-600 sticky top-0">
+                      <tr>
+                        {excelData.headers.map((header, i) => (
+                          <th key={i} className="px-4 py-2 text-left text-xs font-semibold text-white border border-green-700 whitespace-nowrap">{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {excelData.rows.map((row, rIdx) => (
+                        <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {excelData.headers.map((_, cIdx) => (
+                            <td key={cIdx} className="px-4 py-1.5 text-sm text-gray-700 border border-gray-200 whitespace-nowrap">{row[cIdx] || ''}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">Loading spreadsheet...</div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg p-8 text-center">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                <p className="text-gray-700 font-medium mb-2">{previewFile.name}</p>
+                <p className="text-gray-500 text-sm mb-4">Preview not available for this file type</p>
+                <a href={previewFile.url} download={previewFile.name} target="_blank" rel="noopener noreferrer" className="btn btn-primary text-sm">Download File</a>
+              </div>
+            )}
           </div>
         </div>
       )}

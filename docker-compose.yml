@@ -45,6 +45,7 @@ services:
     volumes:
       - ./backend:/app
       - bundle_cache:/usr/local/bundle
+      - uploads_data:/app/public/uploads
     ports:
       - "3000:3000"
     environment:
@@ -110,6 +111,7 @@ volumes:
   postgres_data:
   redis_data:
   bundle_cache:
+  uploads_data:
 
 networks:
   bugzera_network:

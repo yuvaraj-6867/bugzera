@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent, type DragEvent } from 'react'
+import * as XLSX from 'xlsx'
 
 const statusColumns = [
   { id: 'todo', label: 'To Do', color: 'border-blue-400', bgColor: 'bg-blue-50', textColor: 'text-blue-700' },
@@ -8,7 +9,7 @@ const statusColumns = [
   { id: 'done', label: 'Done', color: 'border-green-400', bgColor: 'bg-green-50', textColor: 'text-green-700' },
 ]
 
-const Tickets = () => {
+const Tickets = ({ projectId }: { projectId?: string }) => {
   const [showModal, setShowModal] = useState(false)
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board')
   const [tickets, setTickets] = useState<any[]>([])
@@ -21,6 +22,10 @@ const Tickets = () => {
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [editMode, setEditMode] = useState(false)
   const [editFormData, setEditFormData] = useState<any>({})
+  const [selectedSprintFilter, setSelectedSprintFilter] = useState<string>('active')
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([])
+  const [editAttachmentFiles, setEditAttachmentFiles] = useState<File[]>([])
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -44,7 +49,10 @@ const Tickets = () => {
   const fetchTickets = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3000/api/v1/tickets', {
+      const url = projectId
+        ? `http://localhost:3000/api/v1/tickets?project_id=${projectId}`
+        : 'http://localhost:3000/api/v1/tickets'
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -62,7 +70,7 @@ const Tickets = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId])
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -86,7 +94,10 @@ const Tickets = () => {
 
   const fetchSprints = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/sprints', {
+      const url = projectId
+        ? `http://localhost:3000/api/v1/sprints?project_id=${projectId}`
+        : 'http://localhost:3000/api/v1/sprints'
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -102,7 +113,7 @@ const Tickets = () => {
       console.error('Error fetching sprints:', error)
       setSprints([])
     }
-  }, [])
+  }, [projectId])
 
   const fetchEnvironments = useCallback(async () => {
     try {
@@ -139,33 +150,35 @@ const Tickets = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
+      const fd = new FormData()
+      fd.append('ticket[title]', formData.title)
+      fd.append('ticket[description]', formData.description)
+      fd.append('ticket[status]', formData.status)
+      fd.append('ticket[ticket_type]', formData.type)
+      fd.append('ticket[priority]', formData.priority)
+      fd.append('ticket[severity]', formData.severity)
+      fd.append('ticket[steps_to_reproduce]', formData.stepsToReproduce)
+      fd.append('ticket[expected_result]', formData.expectedResult)
+      fd.append('ticket[actual_result]', formData.actualResult)
+      if (formData.environment) fd.append('ticket[environment]', formData.environment)
+      fd.append('ticket[browser_version]', formData.browserVersion)
+      fd.append('ticket[os_details]', formData.osDetails)
+      if (formData.assignedTo) fd.append('ticket[assigned_to]', formData.assignedTo)
+      if (formData.dueDate) fd.append('ticket[due_date]', formData.dueDate)
+      if (formData.estimate) fd.append('ticket[estimate]', formData.estimate)
+      if (formData.sprint) fd.append('ticket[sprint_id]', formData.sprint)
+      fd.append('ticket[milestone]', formData.milestone)
+      fd.append('ticket[project_id]', projectId || '')
+      attachmentFiles.forEach(file => {
+        fd.append('ticket[attachments][]', file)
+      })
+
       const response = await fetch('http://localhost:3000/api/v1/tickets', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
-        body: JSON.stringify({
-          ticket: {
-            title: formData.title,
-            description: formData.description,
-            status: formData.status,
-            ticket_type: formData.type,
-            priority: formData.priority,
-            severity: formData.severity,
-            steps_to_reproduce: formData.stepsToReproduce,
-            expected_result: formData.expectedResult,
-            actual_result: formData.actualResult,
-            environment: formData.environment || null,
-            browser_version: formData.browserVersion,
-            os_details: formData.osDetails,
-            assigned_to: formData.assignedTo || null,
-            due_date: formData.dueDate || null,
-            estimate: formData.estimate ? parseFloat(formData.estimate) : null,
-            sprint_id: formData.sprint || null,
-            milestone: formData.milestone
-          }
-        })
+        body: fd
       })
 
       if (!response.ok) {
@@ -173,7 +186,7 @@ const Tickets = () => {
         throw new Error(error.message || 'Failed to create ticket')
       }
 
-      alert('✅ Ticket created successfully and saved to database!')
+      alert('Ticket created successfully!')
       setFormData({
         title: '',
         description: '',
@@ -193,10 +206,11 @@ const Tickets = () => {
         sprint: '',
         milestone: ''
       })
+      setAttachmentFiles([])
       setShowModal(false)
       fetchTickets()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to create ticket'}`)
+      alert(`Error: ${error instanceof Error ? error.message : 'Failed to create ticket'}`)
       console.error('Error creating ticket:', error)
     }
   }
@@ -270,24 +284,49 @@ const Tickets = () => {
 
   const handleEditSave = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/tickets/${selectedTicket.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
-          ticket: {
-            title: editFormData.title,
-            description: editFormData.description,
-            status: editFormData.status,
-            severity: editFormData.severity
-          }
+      let response
+      if (editAttachmentFiles.length > 0) {
+        const fd = new FormData()
+        fd.append('ticket[title]', editFormData.title)
+        fd.append('ticket[description]', editFormData.description)
+        fd.append('ticket[status]', editFormData.status)
+        fd.append('ticket[severity]', editFormData.severity)
+        if (editFormData.assigned_user) fd.append('ticket[assigned_user]', editFormData.assigned_user)
+        if (editFormData.sprint_id) fd.append('ticket[sprint_id]', editFormData.sprint_id)
+        if (selectedTicket.attachments) {
+          fd.append('existing_attachments', JSON.stringify(selectedTicket.attachments))
+        }
+        editAttachmentFiles.forEach(file => {
+          fd.append('attachments[]', file)
         })
-      })
+        response = await fetch(`http://localhost:3000/api/v1/tickets/${selectedTicket.id}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+          body: fd
+        })
+      } else {
+        response = await fetch(`http://localhost:3000/api/v1/tickets/${selectedTicket.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({
+            ticket: {
+              title: editFormData.title,
+              description: editFormData.description,
+              status: editFormData.status,
+              severity: editFormData.severity,
+              assigned_user: editFormData.assigned_user,
+              sprint_id: editFormData.sprint_id || null
+            }
+          })
+        })
+      }
       if (!response.ok) throw new Error('Failed to update ticket')
       await fetchTickets()
       setEditMode(false)
+      setEditAttachmentFiles([])
       setSelectedTicket(null)
     } catch (error) {
       console.error('Error updating ticket:', error)
@@ -311,6 +350,100 @@ const Tickets = () => {
     }
   }
 
+  const isImageFile = (name: string) => /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(name)
+  const isVideoFile = (name: string) => /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(name)
+  const isPdfFile = (name: string) => /\.pdf$/i.test(name)
+  const isExcelFile = (name: string) => /\.(xlsx|xls|csv)$/i.test(name)
+
+  const getFileIcon = (name: string) => {
+    if (isImageFile(name)) return 'IMG'
+    if (isVideoFile(name)) return 'VID'
+    if (isPdfFile(name)) return 'PDF'
+    if (isExcelFile(name)) return 'XLS'
+    const ext = name.split('.').pop()?.toUpperCase()
+    return ext || 'FILE'
+  }
+
+  const renderFileThumb = (name: string, size: 'sm' | 'md' | 'lg' = 'md') => {
+    const dims = size === 'sm' ? 'w-16 h-16' : size === 'lg' ? 'w-24 h-24' : 'w-20 h-20'
+    const iconSize = size === 'sm' ? 'w-7 h-7' : size === 'lg' ? 'w-10 h-10' : 'w-8 h-8'
+    const textSize = size === 'sm' ? 'text-[9px]' : 'text-[10px]'
+    if (isPdfFile(name)) {
+      return (
+        <div className={`${dims} rounded-lg border border-red-200 flex flex-col items-center justify-center bg-red-50 cursor-pointer hover:border-red-400 transition-colors`}>
+          <svg className={`${iconSize} text-red-500`} viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM9.5 17.5v-3h1.1c.7 0 1.2-.1 1.5-.4.3-.3.5-.7.5-1.2s-.2-.9-.5-1.2c-.3-.3-.8-.4-1.5-.4H8.5v6.2h1zm1-4.6c.3 0 .5.1.6.2.1.1.2.3.2.6 0 .3-.1.5-.2.6-.1.1-.3.2-.6.2h-.9v-1.6h.9zm3.5 4.6v-3h1.3c.5 0 .9.2 1.2.5.3.3.4.8.4 1.3v.4c0 .3-.1.5-.2.7-.1.2-.3.4-.5.5-.2.1-.5.2-.9.2H14zm1-2.5v2h.3c.2 0 .4-.1.5-.2.1-.1.2-.4.2-.8 0-.4-.1-.7-.2-.8-.1-.1-.3-.2-.5-.2H15z"/></svg>
+          <span className={`${textSize} text-red-600 font-semibold mt-0.5`}>PDF</span>
+        </div>
+      )
+    }
+    if (isExcelFile(name)) {
+      return (
+        <div className={`${dims} rounded-lg border border-green-200 flex flex-col items-center justify-center bg-green-50 cursor-pointer hover:border-green-400 transition-colors`}>
+          <svg className={`${iconSize} text-green-600`} viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 17l2-3-2-3h1.5l1.3 2 1.2-2H13.5l-2 3 2 3H12l-1.3-2-1.2 2H8z"/></svg>
+          <span className={`${textSize} text-green-700 font-semibold mt-0.5`}>XLS</span>
+        </div>
+      )
+    }
+    return (
+      <div className={`${dims} rounded-lg border border-gray-200 flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:border-blue-400 transition-colors`}>
+        <svg className={`${iconSize} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+        <span className={`${textSize} text-gray-500 mt-0.5`}>{getFileIcon(name)}</span>
+      </div>
+    )
+  }
+
+  const [excelData, setExcelData] = useState<{ headers: string[]; rows: string[][] } | null>(null)
+
+  const parseExcelFromUrl = async (url: string) => {
+    try {
+      const response = await fetch(url)
+      const arrayBuffer = await response.arrayBuffer()
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      const sheetName = workbook.SheetNames[0]
+      const sheet = workbook.Sheets[sheetName]
+      const jsonData = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
+      if (jsonData.length > 0) {
+        const headers = (jsonData[0] as string[]).map(h => String(h ?? ''))
+        const rows = jsonData.slice(1).map(row => (row as string[]).map(cell => String(cell ?? '')))
+        setExcelData({ headers, rows })
+      }
+    } catch (error) {
+      console.error('Error parsing Excel:', error)
+      setExcelData(null)
+    }
+  }
+
+  const parseExcelFromFile = async (file: File) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      const sheetName = workbook.SheetNames[0]
+      const sheet = workbook.Sheets[sheetName]
+      const jsonData = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
+      if (jsonData.length > 0) {
+        const headers = (jsonData[0] as string[]).map(h => String(h ?? ''))
+        const rows = jsonData.slice(1).map(row => (row as string[]).map(cell => String(cell ?? '')))
+        setExcelData({ headers, rows })
+      }
+    } catch (error) {
+      console.error('Error parsing Excel:', error)
+      setExcelData(null)
+    }
+  }
+
+  const openPreview = (url: string, name: string, file?: File) => {
+    const type = isImageFile(name) ? 'image' : isVideoFile(name) ? 'video' : isPdfFile(name) ? 'pdf' : isExcelFile(name) ? 'excel' : 'other'
+    setExcelData(null)
+    setPreviewFile({ url, name, type })
+    if (type === 'excel') {
+      if (file) {
+        parseExcelFromFile(file)
+      } else {
+        parseExcelFromUrl(url)
+      }
+    }
+  }
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'low': return 'bg-green-100 text-green-800'
@@ -321,9 +454,20 @@ const Tickets = () => {
     }
   }
 
+  // Filter tickets by selected sprint
+  const filteredTickets = tickets.filter(ticket => {
+    if (selectedSprintFilter === 'all') return true
+    if (selectedSprintFilter === 'active') {
+      const activeSprint = sprints.find(s => s.status === 'active')
+      return activeSprint ? ticket.sprint_id === activeSprint.id : true
+    }
+    if (selectedSprintFilter === 'unassigned') return !ticket.sprint_id
+    return ticket.sprint_id === parseInt(selectedSprintFilter)
+  })
+
   return (
     <div>
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-4">
         <div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Tickets</h1>
           <p className="text-gray-600">Track bugs and issues</p>
@@ -351,6 +495,48 @@ const Tickets = () => {
             <span>+</span> New Ticket
           </button>
         </div>
+      </div>
+
+      {/* Sprint Filter */}
+      <div className="flex items-center gap-3 mb-6">
+        <label className="text-sm font-medium text-gray-600">Sprint:</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedSprintFilter('all')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              selectedSprintFilter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setSelectedSprintFilter('active')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              selectedSprintFilter === 'active' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'
+            }`}
+          >
+            Current Sprint
+          </button>
+          {sprints.filter(s => s.status === 'completed').map(sprint => (
+            <button
+              key={sprint.id}
+              onClick={() => setSelectedSprintFilter(String(sprint.id))}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                selectedSprintFilter === String(sprint.id) ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+              }`}
+            >
+              {sprint.name}
+            </button>
+          ))}
+          <button
+            onClick={() => setSelectedSprintFilter('unassigned')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              selectedSprintFilter === 'unassigned' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            No Sprint
+          </button>
+        </div>
       </div>      
 
       {/* Loading State */}
@@ -360,18 +546,11 @@ const Tickets = () => {
         </div>
       )}
 
-      {/* Empty State */}
-      {!loading && tickets.length === 0 && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">No tickets yet. Create your first ticket!</p>
-        </div>
-      )}
-
       {/* Kanban Board View */}
       {!loading && viewMode === 'board' && (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {statusColumns.map(column => {
-            const columnTickets = tickets.filter(t => t.status === column.id)
+            const columnTickets = filteredTickets.filter(t => t.status === column.id)
             return (
               <div
                 key={column.id}
@@ -454,7 +633,7 @@ const Tickets = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {tickets.map((ticket) => (
+                {filteredTickets.map((ticket) => (
                   <tr key={ticket.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => viewTicket(ticket.id)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{ticket.title}</div>
@@ -507,14 +686,49 @@ const Tickets = () => {
                 </div>
                 <div>
                   <label className="form-label">Description *</label>
-                  <textarea name="description" value={formData.description} onChange={handleChange} className="form-textarea" placeholder="Describe the issue..." rows={3} required></textarea>
+                  <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                    <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border-0 outline-none resize-y" placeholder="Describe the issue..." rows={3} required></textarea>
+                    {attachmentFiles.length > 0 && (
+                      <div className="px-3 pb-2 flex flex-wrap gap-2">
+                        {attachmentFiles.map((file, idx) => (
+                          <div key={idx} className="relative group">
+                            {isImageFile(file.name) ? (
+                              <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-blue-400 transition-colors" onClick={() => openPreview(URL.createObjectURL(file), file.name, file)}>
+                                <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-full object-cover" />
+                              </div>
+                            ) : isVideoFile(file.name) ? (
+                              <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-blue-400 transition-colors relative bg-black" onClick={() => openPreview(URL.createObjectURL(file), file.name, file)}>
+                                <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" muted />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                </div>
+                              </div>
+                            ) : (
+                              <div onClick={() => openPreview(URL.createObjectURL(file), file.name, file)}>
+                                {renderFileThumb(file.name, 'md')}
+                              </div>
+                            )}
+                            <button type="button" className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setAttachmentFiles(prev => prev.filter((_, i) => i !== idx))}>x</button>
+                            <p className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[80px] text-center">{file.name}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="border-t border-gray-200 px-3 py-1.5 bg-gray-50">
+                      <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer hover:text-blue-600 transition-colors w-fit">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                        Attach files
+                        <input type="file" multiple className="hidden" onChange={(e) => { if (e.target.files) setAttachmentFiles(prev => [...prev, ...Array.from(e.target.files!)]) }} />
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Classification */}
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <label className="form-label">Status</label>
-                    <select name="status" value={formData.status} onChange={handleChange} className="form-select">
+                    <label className="form-label">Status *</label>
+                    <select name="status" value={formData.status} onChange={handleChange} className="form-select" required>
                       <option value="todo">To Do</option>
                       <option value="in_progress">In Progress</option>
                       <option value="in_review">In Review</option>
@@ -523,8 +737,8 @@ const Tickets = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="form-label">Type</label>
-                    <select name="type" value={formData.type} onChange={handleChange} className="form-select">
+                    <label className="form-label">Type *</label>
+                    <select name="type" value={formData.type} onChange={handleChange} className="form-select" required>
                       <option value="bug">Bug</option>
                       <option value="feature">Feature</option>
                       <option value="improvement">Improvement</option>
@@ -532,8 +746,8 @@ const Tickets = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="form-label">Priority</label>
-                    <select name="priority" value={formData.priority} onChange={handleChange} className="form-select">
+                    <label className="form-label">Priority *</label>
+                    <select name="priority" value={formData.priority} onChange={handleChange} className="form-select" required>
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
@@ -541,8 +755,8 @@ const Tickets = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="form-label">Severity</label>
-                    <select name="severity" value={formData.severity} onChange={handleChange} className="form-select">
+                    <label className="form-label">Severity *</label>
+                    <select name="severity" value={formData.severity} onChange={handleChange} className="form-select" required>
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
@@ -633,12 +847,66 @@ const Tickets = () => {
                   <label className="form-label">Milestone</label>
                   <input type="text" name="milestone" value={formData.milestone} onChange={handleChange} className="form-input" placeholder="v2.0.0" />
                 </div>
+
               </form>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
               <button type="submit" className="btn btn-primary" onClick={handleSubmit}>Create Ticket</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center" onClick={() => setPreviewFile(null)}>
+          <div className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-white text-sm font-medium truncate max-w-[400px]">{previewFile.name}</span>
+              <a href={previewFile.url} download={previewFile.name} target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white text-xs bg-white/20 px-3 py-1 rounded-full">
+                Download
+              </a>
+              <button className="text-white/70 hover:text-white text-2xl leading-none" onClick={() => setPreviewFile(null)}>x</button>
+            </div>
+            {previewFile.type === 'image' ? (
+              <img src={previewFile.url} alt={previewFile.name} className="max-w-[85vw] max-h-[80vh] object-contain rounded-lg shadow-2xl" />
+            ) : previewFile.type === 'video' ? (
+              <video src={previewFile.url} controls autoPlay className="max-w-[85vw] max-h-[80vh] rounded-lg shadow-2xl bg-black" />
+            ) : previewFile.type === 'pdf' ? (
+              <iframe src={previewFile.url} className="w-[80vw] h-[80vh] rounded-lg bg-white" title={previewFile.name} />
+            ) : previewFile.type === 'excel' ? (
+              <div className="bg-white rounded-lg shadow-2xl max-w-[85vw] max-h-[80vh] overflow-auto">
+                {excelData ? (
+                  <table className="min-w-full border-collapse">
+                    <thead className="bg-green-600 sticky top-0">
+                      <tr>
+                        {excelData.headers.map((header, i) => (
+                          <th key={i} className="px-4 py-2 text-left text-xs font-semibold text-white border border-green-700 whitespace-nowrap">{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {excelData.rows.map((row, rIdx) => (
+                        <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {excelData.headers.map((_, cIdx) => (
+                            <td key={cIdx} className="px-4 py-1.5 text-sm text-gray-700 border border-gray-200 whitespace-nowrap">{row[cIdx] || ''}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">Loading spreadsheet...</div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg p-8 text-center">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                <p className="text-gray-700 font-medium mb-2">{previewFile.name}</p>
+                <a href={previewFile.url} download={previewFile.name} target="_blank" rel="noopener noreferrer" className="btn btn-primary text-sm">Download File</a>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -660,7 +928,9 @@ const Tickets = () => {
                           title: selectedTicket.title || '',
                           description: selectedTicket.description || '',
                           status: selectedTicket.status || 'todo',
-                          severity: selectedTicket.severity || 'medium'
+                          severity: selectedTicket.severity || 'medium',
+                          assigned_user: selectedTicket.assigned_user || '',
+                          sprint_id: selectedTicket.sprint_id || ''
                         })
                       }}
                     >
@@ -681,17 +951,71 @@ const Tickets = () => {
               {editMode ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="form-label">Title</label>
-                    <input type="text" name="title" value={editFormData.title} onChange={handleEditChange} className="form-input" />
+                    <label className="form-label">Title *</label>
+                    <input type="text" name="title" value={editFormData.title} onChange={handleEditChange} className="form-input" required />
                   </div>
                   <div>
                     <label className="form-label">Description</label>
-                    <textarea name="description" value={editFormData.description} onChange={handleEditChange} className="form-textarea" rows={4}></textarea>
+                    <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                      <textarea name="description" value={editFormData.description} onChange={handleEditChange} className="w-full px-3 py-2 border-0 outline-none resize-y" rows={4}></textarea>
+                      {((selectedTicket.attachments && selectedTicket.attachments.length > 0) || editAttachmentFiles.length > 0) && (
+                        <div className="px-3 pb-2 flex flex-wrap gap-2">
+                          {selectedTicket.attachments && selectedTicket.attachments.map((att: any, idx: number) => (
+                            <div key={`existing-${idx}`} className="relative">
+                              {isImageFile(att.name) ? (
+                                <div className="w-16 h-16 rounded border border-gray-200 overflow-hidden cursor-pointer hover:border-blue-400" onClick={() => openPreview(`http://localhost:3000${att.url}`, att.name)}>
+                                  <img src={`http://localhost:3000${att.url}`} alt={att.name} className="w-full h-full object-cover" />
+                                </div>
+                              ) : isVideoFile(att.name) ? (
+                                <div className="w-16 h-16 rounded border border-gray-200 overflow-hidden cursor-pointer hover:border-blue-400 relative bg-black" onClick={() => openPreview(`http://localhost:3000${att.url}`, att.name)}>
+                                  <video src={`http://localhost:3000${att.url}`} className="w-full h-full object-cover" muted />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div onClick={() => openPreview(`http://localhost:3000${att.url}`, att.name)}>
+                                  {renderFileThumb(att.name, 'sm')}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {editAttachmentFiles.map((file, idx) => (
+                            <div key={`new-${idx}`} className="relative group">
+                              {isImageFile(file.name) ? (
+                                <div className="w-16 h-16 rounded border-2 border-blue-300 overflow-hidden cursor-pointer" onClick={() => openPreview(URL.createObjectURL(file), file.name, file)}>
+                                  <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-full object-cover" />
+                                </div>
+                              ) : isVideoFile(file.name) ? (
+                                <div className="w-16 h-16 rounded border-2 border-blue-300 overflow-hidden cursor-pointer relative bg-black" onClick={() => openPreview(URL.createObjectURL(file), file.name, file)}>
+                                  <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" muted />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div onClick={() => openPreview(URL.createObjectURL(file), file.name, file)}>
+                                  {renderFileThumb(file.name, 'sm')}
+                                </div>
+                              )}
+                              <button type="button" className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditAttachmentFiles(prev => prev.filter((_, i) => i !== idx))}>x</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="border-t border-gray-200 px-3 py-1.5 bg-gray-50">
+                        <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer hover:text-blue-600 transition-colors w-fit">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                          Attach files
+                          <input type="file" multiple className="hidden" onChange={(e) => { if (e.target.files) setEditAttachmentFiles(prev => [...prev, ...Array.from(e.target.files!)]) }} />
+                        </label>
+                      </div>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="form-label">Status</label>
-                      <select name="status" value={editFormData.status} onChange={handleEditChange} className="form-select">
+                      <label className="form-label">Status *</label>
+                      <select name="status" value={editFormData.status} onChange={handleEditChange} className="form-select" required>
                         <option value="todo">To Do</option>
                         <option value="in_progress">In Progress</option>
                         <option value="in_review">In Review</option>
@@ -700,12 +1024,36 @@ const Tickets = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label">Severity</label>
-                      <select name="severity" value={editFormData.severity} onChange={handleEditChange} className="form-select">
+                      <label className="form-label">Severity *</label>
+                      <select name="severity" value={editFormData.severity} onChange={handleEditChange} className="form-select" required>
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                         <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="form-label">Assigned To</label>
+                      <select name="assigned_user" value={editFormData.assigned_user} onChange={handleEditChange} className="form-select">
+                        <option value="">Unassigned</option>
+                        {users.map(user => (
+                          <option key={user.id} value={`${user.first_name} ${user.last_name}`}>
+                            {user.first_name} {user.last_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="form-label">Sprint</label>
+                      <select name="sprint_id" value={editFormData.sprint_id} onChange={handleEditChange} className="form-select">
+                        <option value="">No Sprint</option>
+                        {sprints.map(sprint => (
+                          <option key={sprint.id} value={sprint.id}>
+                            {sprint.name} {sprint.status === 'active' ? '(Active)' : ''}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -758,6 +1106,40 @@ const Tickets = () => {
                     <label className="text-sm font-medium text-gray-500">Updated At</label>
                     <p className="mt-1 text-gray-900">{selectedTicket.updated_at ? new Date(selectedTicket.updated_at).toLocaleString() : 'N/A'}</p>
                   </div>
+                  {selectedTicket.attachments && selectedTicket.attachments.length > 0 && (
+                    <div className="col-span-2">
+                      <label className="text-sm font-medium text-gray-500">Attachments</label>
+                      <div className="mt-2 flex flex-wrap gap-3">
+                        {selectedTicket.attachments.map((att: any, idx: number) => (
+                          <div key={idx} className="cursor-pointer" onClick={() => openPreview(`http://localhost:3000${att.url}`, att.name)}>
+                            {isImageFile(att.name) ? (
+                              <div className="group">
+                                <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all">
+                                  <img src={`http://localhost:3000${att.url}`} alt={att.name} className="w-full h-full object-cover" />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[96px] text-center">{att.name}</p>
+                              </div>
+                            ) : isVideoFile(att.name) ? (
+                              <div className="group">
+                                <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all relative bg-black">
+                                  <video src={`http://localhost:3000${att.url}`} className="w-full h-full object-cover" muted />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                    <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                  </div>
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[96px] text-center">{att.name}</p>
+                              </div>
+                            ) : (
+                              <div className="group">
+                                {renderFileThumb(att.name, 'lg')}
+                                <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[96px] text-center">{att.name}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

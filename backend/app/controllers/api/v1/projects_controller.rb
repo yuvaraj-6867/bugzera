@@ -1,5 +1,4 @@
 class Api::V1::ProjectsController < ApplicationController
-  skip_before_action :authenticate_request, :check_authorization
 
   def index
     # If admin, show all projects

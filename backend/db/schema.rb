@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_13_090244) do
+ActiveRecord::Schema[7.1].define(version: 2026_02_14_150844) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -239,6 +239,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_13_090244) do
     t.integer "project_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "description"
+    t.text "sprint_goal"
+    t.string "team"
+    t.integer "capacity"
+    t.float "target_velocity"
+    t.integer "completion_percentage"
+    t.text "retrospective_notes"
+    t.boolean "track_burndown"
+    t.string "tags"
     t.index ["project_id"], name: "index_sprints_on_project_id"
   end
 
@@ -281,6 +290,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_13_090244) do
     t.datetime "updated_at", null: false
     t.text "test_data"
     t.integer "project_id"
+    t.string "priority"
+    t.string "test_type"
+    t.text "post_conditions"
+    t.string "automation_status"
+    t.integer "estimated_duration"
+    t.string "tags"
     t.index ["assigned_user_id"], name: "index_test_cases_on_assigned_user_id"
     t.index ["created_at"], name: "index_test_cases_on_created_at"
     t.index ["created_by_id"], name: "index_test_cases_on_created_by_id"

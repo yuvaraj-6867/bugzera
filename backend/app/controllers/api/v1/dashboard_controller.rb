@@ -1,5 +1,4 @@
-class Api::V1::DashboardController < ActionController::Base
-  skip_before_action :verify_authenticity_token
+class Api::V1::DashboardController < ApplicationController
   def metrics
     total_test_cases = TestCase.count
     active_test_cases = TestCase.where(status: ['active', 'in_progress']).count

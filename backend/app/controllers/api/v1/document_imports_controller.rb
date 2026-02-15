@@ -1,6 +1,4 @@
 class Api::V1::DocumentImportsController < ApplicationController
-  skip_before_action :authenticate_request
-  skip_before_action :check_authorization
   def preview
     file = params[:file]
     return render json: { error: 'No file provided' }, status: :bad_request unless file
