@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { T } from '../../components/AutoTranslate'
 
 const TestCases = ({ projectId }: { projectId?: string }) => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [testCases, setTestCases] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
@@ -234,14 +237,14 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       <div className="flex justify-between items-start mb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-bold text-gray-900">Test Cases</h1>
+            <h1 className="text-4xl font-bold text-gray-900">{t('testCases.title')}</h1>
             {!loading && testCases.length > 0 && (
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white">
                 {testCases.length} {testCases.length === 1 ? 'Case' : 'Cases'}
               </span>
             )}
           </div>
-          <p className="text-gray-600">Create and manage test cases with unique identifiers</p>
+          <p className="text-gray-600">{t('testCases.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -298,9 +301,9 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{testCase.title}</div>
+                      <div className="text-sm font-medium text-gray-900"><T>{testCase.title}</T></div>
                       {testCase.description && (
-                        <div className="text-sm text-gray-500 truncate max-w-md">{testCase.description}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-md"><T>{testCase.description}</T></div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -478,7 +481,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white">
                   TC-{String(selectedTestCase.id).padStart(3, '0')}
                 </span>
-                <h2 className="modal-title">{selectedTestCase.title}</h2>
+                <h2 className="modal-title"><T>{selectedTestCase.title}</T></h2>
               </div>
               <div className="flex items-center gap-2">
                 {!editMode && (
@@ -528,7 +531,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="form-label text-gray-500">Title</label>
-                    <p className="text-sm text-gray-900">{selectedTestCase.title || '-'}</p>
+                    <p className="text-sm text-gray-900"><T>{selectedTestCase.title || '-'}</T></p>
                   </div>
                   <div>
                     <label className="form-label text-gray-500">Status</label>
@@ -536,7 +539,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                   </div>
                   <div className="col-span-2">
                     <label className="form-label text-gray-500">Description</label>
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedTestCase.description || '-'}</p>
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap"><T>{selectedTestCase.description || '-'}</T></p>
                   </div>
                   <div>
                     <label className="form-label text-gray-500">Priority</label>

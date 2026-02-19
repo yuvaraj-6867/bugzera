@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Integrations = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
 
   // TODO: Fetch from backend API
@@ -10,8 +12,8 @@ const Integrations = () => {
     <div className="min-h-screen bg-[#FAFBFC] p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">Integrations</h1>
-          <p className="text-[#64748B]">Connect with third-party tools and services</p>
+          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">{t('integrations.title')}</h1>
+          <p className="text-[#64748B]">{t('integrations.subtitle')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           + Add Integration

@@ -22,6 +22,8 @@ import TestData from './pages/TestData/TestData'
 import TestRuns from './pages/TestRuns/TestRuns'
 import CalendarEvents from './pages/Calendar/Calendar'
 import Documents from './pages/Documents/Documents'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 const queryClient = new QueryClient()
 
@@ -35,6 +37,8 @@ const RoleRoute = ({ roles }: { roles: string[] }) => {
 
 function App() {
   return (
+    <ThemeProvider>
+    <LanguageProvider>
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
@@ -78,6 +82,8 @@ function App() {
         </Routes>
       </Router>
     </QueryClientProvider>
+    </LanguageProvider>
+    </ThemeProvider>
   )
 }
 

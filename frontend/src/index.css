@@ -44,6 +44,19 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  .dark body,
+  body.dark {
+    @apply bg-[#0F172A] text-gray-200;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.dark body {
+    @apply bg-[#0F172A] text-gray-200;
+  }
+
   #root {
     @apply min-h-screen;
   }
@@ -63,8 +76,16 @@
     @apply bg-gray-100 text-[#0F172A] hover:bg-gray-200;
   }
 
+  :is(.dark .btn-secondary) {
+    @apply bg-gray-700 text-gray-200 hover:bg-gray-600;
+  }
+
   .btn-outline {
     @apply bg-transparent border border-gray-200 text-[#0F172A] hover:bg-gray-50;
+  }
+
+  :is(.dark .btn-outline) {
+    @apply border-gray-600 text-gray-200 hover:bg-gray-800;
   }
 
   .btn-danger {
@@ -78,6 +99,12 @@
     @apply w-full px-4 py-3 border border-gray-200 rounded-lg text-[0.9375rem] transition-all duration-200 bg-white text-[#0F172A];
   }
 
+  :is(.dark .form-input),
+  :is(.dark .form-select),
+  :is(.dark .form-textarea) {
+    @apply bg-gray-800 border-gray-600 text-gray-200;
+  }
+
   .form-input:focus,
   .form-select:focus,
   .form-textarea:focus {
@@ -88,6 +115,10 @@
     @apply block font-semibold mb-2 text-[#0F172A] text-sm;
   }
 
+  :is(.dark .form-label) {
+    @apply text-gray-300;
+  }
+
   .form-textarea {
     @apply resize-y min-h-[100px];
   }
@@ -95,6 +126,10 @@
   /* Cards */
   .card {
     @apply bg-white border border-gray-200 rounded-xl p-6 mb-6;
+  }
+
+  :is(.dark .card) {
+    @apply bg-gray-800 border-gray-700;
   }
 
   /* Badges */
@@ -131,12 +166,24 @@
     @apply bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl;
   }
 
+  :is(.dark .modal-content) {
+    @apply bg-gray-800;
+  }
+
   .modal-header {
     @apply px-8 py-6 border-b border-gray-200 flex justify-between items-center;
   }
 
+  :is(.dark .modal-header) {
+    @apply border-gray-700;
+  }
+
   .modal-title {
     @apply text-2xl font-bold text-[#0F172A];
+  }
+
+  :is(.dark .modal-title) {
+    @apply text-gray-100;
   }
 
   .modal-body {
@@ -145,6 +192,18 @@
 
   .modal-footer {
     @apply px-8 py-6 border-t border-gray-200 flex justify-end gap-4;
+  }
+
+  :is(.dark .modal-footer) {
+    @apply border-gray-700;
+  }
+
+  .badge-neutral {
+    @apply bg-gray-100 text-gray-600;
+  }
+
+  :is(.dark .badge-neutral) {
+    @apply bg-gray-700 text-gray-300;
   }
 }
 
@@ -165,4 +224,196 @@
   .shadow-xl {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   }
+}
+
+/* ============================
+   GLOBAL DARK MODE OVERRIDES
+   These auto-theme all pages
+   ============================ */
+
+/* Page backgrounds */
+html.dark .bg-\[\#FAFBFC\] {
+  background-color: transparent;
+}
+
+/* Text colors - dark text becomes light */
+html.dark .text-gray-900 {
+  color: #f3f4f6;
+}
+html.dark .text-\[\#0F172A\] {
+  color: #f3f4f6;
+}
+html.dark .text-gray-800 {
+  color: #e5e7eb;
+}
+html.dark .text-gray-700 {
+  color: #d1d5db;
+}
+html.dark .text-gray-600 {
+  color: #9ca3af;
+}
+html.dark .text-gray-500 {
+  color: #9ca3af;
+}
+html.dark .text-\[\#64748B\] {
+  color: #9ca3af;
+}
+
+/* Background colors */
+html.dark .bg-white {
+  background-color: #1f2937;
+}
+html.dark .bg-gray-50 {
+  background-color: rgb(55 65 81 / 0.5);
+}
+html.dark .bg-gray-100 {
+  background-color: #374151;
+}
+
+/* Border colors */
+html.dark .border-gray-200 {
+  border-color: #374151;
+}
+html.dark .border-gray-300 {
+  border-color: #4b5563;
+}
+html.dark .divide-gray-200 > * + * {
+  border-color: #374151;
+}
+
+/* Hover states */
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #374151;
+}
+html.dark .hover\:bg-gray-200:hover {
+  background-color: #4b5563;
+}
+html.dark .hover\:text-gray-700:hover {
+  color: #e5e7eb;
+}
+html.dark .hover\:text-gray-900:hover {
+  color: #f3f4f6;
+}
+html.dark .hover\:shadow-lg:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* Table specific */
+html.dark thead.bg-gray-50 {
+  background-color: #374151;
+}
+html.dark tbody.bg-white {
+  background-color: #1f2937;
+}
+
+/* Kanban board columns */
+html.dark .bg-blue-50 {
+  background-color: rgb(30 58 138 / 0.3);
+}
+html.dark .bg-yellow-50 {
+  background-color: rgb(113 63 18 / 0.3);
+}
+html.dark .bg-purple-50 {
+  background-color: rgb(88 28 135 / 0.3);
+}
+html.dark .bg-orange-50 {
+  background-color: rgb(124 45 18 / 0.3);
+}
+html.dark .bg-green-50 {
+  background-color: rgb(20 83 45 / 0.3);
+}
+html.dark .bg-red-50 {
+  background-color: rgb(127 29 29 / 0.3);
+}
+
+/* Colored text in dark mode - make slightly brighter */
+html.dark .text-blue-700 {
+  color: #93c5fd;
+}
+html.dark .text-yellow-700 {
+  color: #fcd34d;
+}
+html.dark .text-purple-700 {
+  color: #c4b5fd;
+}
+html.dark .text-orange-700 {
+  color: #fdba74;
+}
+html.dark .text-green-700 {
+  color: #86efac;
+}
+html.dark .text-red-700 {
+  color: #fca5a5;
+}
+html.dark .text-green-800 {
+  color: #86efac;
+}
+html.dark .text-blue-800 {
+  color: #93c5fd;
+}
+html.dark .text-yellow-800 {
+  color: #fcd34d;
+}
+html.dark .text-orange-800 {
+  color: #fdba74;
+}
+html.dark .text-red-800 {
+  color: #fca5a5;
+}
+
+/* Colored badge backgrounds in dark mode */
+html.dark .bg-green-100 {
+  background-color: rgb(20 83 45 / 0.4);
+}
+html.dark .bg-blue-100 {
+  background-color: rgb(30 58 138 / 0.4);
+}
+html.dark .bg-yellow-100 {
+  background-color: rgb(113 63 18 / 0.4);
+}
+html.dark .bg-orange-100 {
+  background-color: rgb(124 45 18 / 0.4);
+}
+html.dark .bg-red-100 {
+  background-color: rgb(127 29 29 / 0.4);
+}
+html.dark .bg-purple-100 {
+  background-color: rgb(88 28 135 / 0.4);
+}
+
+/* Focus/ring states */
+html.dark .focus-within\:ring-blue-500:focus-within {
+  --tw-ring-color: #6366f1;
+}
+html.dark .focus-within\:border-blue-500:focus-within {
+  border-color: #6366f1;
+}
+
+/* Shadows in dark mode */
+html.dark .shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+html.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Scrollbar dark mode */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Login page */
+html.dark .bg-gradient-to-br.from-\[\#0F172A\] {
+  background: linear-gradient(to bottom right, #0F172A, #1e293b);
 }

@@ -1,9 +1,12 @@
+import { useLanguage } from '../../contexts/LanguageContext'
+
 const Dashboard = () => {
+  const { t } = useLanguage()
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">Welcome back! Here's your testing overview.</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('dashboard.title')}</h1>
+        <p className="text-gray-600">{t('dashboard.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

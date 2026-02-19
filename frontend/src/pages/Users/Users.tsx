@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Users = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -187,8 +189,8 @@ const Users = () => {
     <div>
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Users</h1>
-          <p className="text-gray-600">Manage team members</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('users.title')}</h1>
+          <p className="text-gray-600">{t('users.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}

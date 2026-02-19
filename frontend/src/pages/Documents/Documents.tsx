@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import * as XLSX from 'xlsx'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { T } from '../../components/AutoTranslate'
 
 const Documents = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -180,8 +183,8 @@ const Documents = () => {
     <div>
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Documents</h1>
-          <p className="text-gray-600">Store and manage documentation (SRS, Test Plans, Reports, etc.)</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('documents.title')}</h1>
+          <p className="text-gray-600">{t('documents.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -229,9 +232,9 @@ const Documents = () => {
                     <tr key={doc.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                          <div className="text-sm font-medium text-gray-900"><T>{doc.title}</T></div>
                           {doc.description && (
-                            <div className="text-sm text-gray-500 truncate max-w-md">{doc.description}</div>
+                            <div className="text-sm text-gray-500 truncate max-w-md"><T>{doc.description}</T></div>
                           )}
                         </div>
                       </td>

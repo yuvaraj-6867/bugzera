@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface TestCase {
   id: number
@@ -27,6 +28,7 @@ interface TestPlan {
 }
 
 const TestPlans = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [showAddTestCaseModal, setShowAddTestCaseModal] = useState(false)
   const [testPlans, setTestPlans] = useState<TestPlan[]>([])
@@ -198,14 +200,14 @@ const TestPlans = () => {
       <div className="flex justify-between items-start mb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-bold text-gray-900">Test Plans</h1>
+            <h1 className="text-4xl font-bold text-gray-900">{t('testPlans.title')}</h1>
             {!loading && testPlans.length > 0 && (
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-green-500 to-blue-600 text-white">
                 {testPlans.length} {testPlans.length === 1 ? 'Plan' : 'Plans'}
               </span>
             )}
           </div>
-          <p className="text-gray-600">Create test plans and add test cases to execute</p>
+          <p className="text-gray-600">{t('testPlans.subtitle')}</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn btn-primary">
           <span>+</span> New Test Plan

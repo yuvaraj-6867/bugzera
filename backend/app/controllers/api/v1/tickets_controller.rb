@@ -110,23 +110,21 @@ class Api::V1::TicketsController < ApplicationController
       return
     end
     
-    # Find assigned user by name
+    # Find assigned user by ID or name
+    assigned_to_param = params.dig(:ticket, :assigned_to)
     assigned_user_name = params.dig(:ticket, :assigned_user)
     assigned_user_id = nil
-    
-    Rails.logger.info "Assigned user name: '#{assigned_user_name}'"
-    
-    if assigned_user_name.present? && assigned_user_name != '' && assigned_user_name != 'Assign to'
-      # Find user by exact full name match
+
+    if assigned_to_param.present?
+      # assigned_to contains a user ID
+      assigned_user_id = assigned_to_param.to_i
+      Rails.logger.info "Assigned user by ID: #{assigned_user_id}"
+    elsif assigned_user_name.present? && assigned_user_name != '' && assigned_user_name != 'Assign to'
+      # Fallback: find user by name
       assigned_user = User.all.find { |u| "#{u.first_name} #{u.last_name}" == assigned_user_name }
-      
-      # Fallback: search by email if it's not a full name
-      if !assigned_user
-        assigned_user = User.find_by(email: assigned_user_name)
-      end
-      
+      assigned_user ||= User.find_by(email: assigned_user_name)
       assigned_user_id = assigned_user&.id
-      Rails.logger.info "Assigned user found: #{assigned_user&.first_name} #{assigned_user&.last_name} (ID: #{assigned_user_id})"
+      Rails.logger.info "Assigned user by name: #{assigned_user&.first_name} #{assigned_user&.last_name} (ID: #{assigned_user_id})"
     end
     
     Rails.logger.info "Final assigned_user_id: #{assigned_user_id}"
@@ -144,7 +142,7 @@ class Api::V1::TicketsController < ApplicationController
       sprint_id = active_sprint&.id
     end
 
-    ticket = Ticket.new(ticket_params.except(:assigned_user, :attachments).merge(
+    ticket = Ticket.new(ticket_params.except(:assigned_user, :assigned_to, :attachments).merge(
       created_by_id: creator_id,
       assigned_user_id: assigned_user_id,
       project_id: project_id,
@@ -298,7 +296,7 @@ class Api::V1::TicketsController < ApplicationController
   private
 
   def ticket_params
-    params.require(:ticket).permit(:title, :description, :status, :severity, :project_id, :sprint_id, :assigned_user, :created_by_id, attachments: [])
+    params.require(:ticket).permit(:title, :description, :status, :severity, :project_id, :sprint_id, :assigned_user, :assigned_to, :created_by_id, attachments: [])
   end
   
 

@@ -58,6 +58,10 @@ Rails.application.routes.draw do
       patch 'auth/change_password', to: 'auth#change_password'
     end
     
+    # Settings
+    get 'settings', to: 'settings#show'
+    patch 'settings', to: 'settings#update'
+
     # Slack integration
     post 'slack/configure', to: 'slack#configure'
   end

@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Analytics = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
 
   return (
@@ -8,8 +10,8 @@ const Analytics = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">Analytics & Reports</h1>
-          <p className="text-[#64748B]">View insights and generate reports</p>
+          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">{t('analytics.title')}</h1>
+          <p className="text-[#64748B]">{t('analytics.subtitle')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           + New Report

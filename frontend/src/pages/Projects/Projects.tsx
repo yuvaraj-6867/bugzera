@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { T } from '../../components/AutoTranslate'
 
 const Projects = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,8 +125,8 @@ const Projects = () => {
     <div>
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Projects</h1>
-          <p className="text-gray-600">Manage your testing projects</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('projects.title')}</h1>
+          <p className="text-gray-600">{t('projects.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -157,12 +160,12 @@ const Projects = () => {
             className="card hover:shadow-lg transition-shadow cursor-pointer"
           >
             <div className="flex justify-between items-start mb-3">
-              <h3 className="text-xl font-bold text-[#0F172A]">{project.name}</h3>
+              <h3 className="text-xl font-bold text-[#0F172A]"><T>{project.name}</T></h3>
               <span className={`badge ${project.status === 'active' ? 'badge-success' : project.status === 'archived' ? 'badge-neutral' : 'badge-warning'}`}>
                 {project.status}
               </span>
             </div>
-            <p className="text-gray-600 mb-4">{project.description || 'No description'}</p>
+            <p className="text-gray-600 mb-4"><T>{project.description || 'No description'}</T></p>
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
             </div>

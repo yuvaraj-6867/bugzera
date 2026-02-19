@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent, type DragEvent } from 'react'
 import * as XLSX from 'xlsx'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { T } from '../../components/AutoTranslate'
 
 const statusColumns = [
   { id: 'todo', label: 'To Do', color: 'border-blue-400', bgColor: 'bg-blue-50', textColor: 'text-blue-700' },
@@ -10,6 +12,7 @@ const statusColumns = [
 ]
 
 const Tickets = ({ projectId }: { projectId?: string }) => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board')
   const [tickets, setTickets] = useState<any[]>([])
@@ -469,8 +472,8 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
     <div>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Tickets</h1>
-          <p className="text-gray-600">Track bugs and issues</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('tickets.title')}</h1>
+          <p className="text-gray-600">{t('tickets.subtitle')}</p>
         </div>
         <div className="flex gap-3">
           <div className="flex bg-gray-100 rounded-lg p-1">
@@ -583,10 +586,10 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-sm font-medium text-gray-900 line-clamp-2">{ticket.title}</h4>
+                        <h4 className="text-sm font-medium text-gray-900 line-clamp-2"><T>{ticket.title}</T></h4>
                       </div>
                       {ticket.description && (
-                        <p className="text-xs text-gray-500 mb-2 line-clamp-2">{ticket.description}</p>
+                        <p className="text-xs text-gray-500 mb-2 line-clamp-2"><T>{ticket.description}</T></p>
                       )}
                       <div className="flex flex-wrap gap-1 mb-2">
                         <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getSeverityColor(ticket.severity)}`}>
@@ -636,9 +639,9 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                 {filteredTickets.map((ticket) => (
                   <tr key={ticket.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => viewTicket(ticket.id)}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{ticket.title}</div>
+                      <div className="text-sm font-medium text-gray-900"><T>{ticket.title}</T></div>
                       {ticket.description && (
-                        <div className="text-sm text-gray-500 truncate max-w-md">{ticket.description}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-md"><T>{ticket.description}</T></div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -1062,7 +1065,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Title</label>
-                    <p className="mt-1 text-gray-900">{selectedTicket.title}</p>
+                    <p className="mt-1 text-gray-900"><T>{selectedTicket.title}</T></p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Status</label>
@@ -1076,7 +1079,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                   </div>
                   <div className="col-span-2">
                     <label className="text-sm font-medium text-gray-500">Description</label>
-                    <p className="mt-1 text-gray-900 whitespace-pre-wrap">{selectedTicket.description || 'No description'}</p>
+                    <p className="mt-1 text-gray-900 whitespace-pre-wrap"><T>{selectedTicket.description || 'No description'}</T></p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Severity</label>

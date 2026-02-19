@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const KnowledgeBase = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
 
   // TODO: Fetch from backend API
@@ -12,8 +14,8 @@ const KnowledgeBase = () => {
     <div className="min-h-screen bg-[#FAFBFC] p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">Knowledge Base</h1>
-          <p className="text-[#64748B]">Documentation and guides</p>
+          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">{t('knowledgeBase.title')}</h1>
+          <p className="text-[#64748B]">{t('knowledgeBase.subtitle')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           + New Article

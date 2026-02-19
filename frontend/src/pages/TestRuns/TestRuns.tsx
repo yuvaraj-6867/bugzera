@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const TestRuns = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [testCases, setTestCases] = useState<any[]>([])
 
@@ -32,8 +34,8 @@ const TestRuns = () => {
     <div>
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Test Runs</h1>
-          <p className="text-gray-600">Execute and monitor test runs</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('testRuns.title')}</h1>
+          <p className="text-gray-600">{t('testRuns.subtitle')}</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn btn-primary">
           <span>▶</span> Start Test Run

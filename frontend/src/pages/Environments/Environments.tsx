@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Environments = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [environments, setEnvironments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -132,8 +134,8 @@ const Environments = () => {
     <div className="min-h-screen bg-[#FAFBFC] p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">Test Environments</h1>
-          <p className="text-[#64748B]">Manage test environments and configurations</p>
+          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">{t('environments.title')}</h1>
+          <p className="text-[#64748B]">{t('environments.subtitle')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           + New Environment

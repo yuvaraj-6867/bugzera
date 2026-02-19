@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { T } from '../../components/AutoTranslate'
 
 const Sprints = ({ projectId }: { projectId?: string }) => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [sprints, setSprints] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -197,8 +200,8 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
     <div className="min-h-screen bg-[#FAFBFC] p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">Sprints</h1>
-          <p className="text-[#64748B]">Manage sprint planning and execution</p>
+          <h1 className="text-4xl font-bold text-[#0F172A] mb-2">{t('sprints.title')}</h1>
+          <p className="text-[#64748B]">{t('sprints.subtitle')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           + New Sprint
@@ -231,7 +234,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <span className="badge badge-success mb-2">Current Sprint</span>
-                <h2 className="text-2xl font-bold text-[#0F172A]">{sprint.name}</h2>
+                <h2 className="text-2xl font-bold text-[#0F172A]"><T>{sprint.name}</T></h2>
                 <p className="text-gray-600 mt-1">
                   {new Date(sprint.start_date).toLocaleDateString()} - {new Date(sprint.end_date).toLocaleDateString()}
                   <span className="ml-3 text-sm font-medium text-orange-600">({daysLeft} days left)</span>
@@ -291,12 +294,12 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
               <div key={sprint.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => viewSprint(sprint.id)}>
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="text-lg font-semibold text-[#0F172A]">{sprint.name}</h4>
+                    <h4 className="text-lg font-semibold text-[#0F172A]"><T>{sprint.name}</T></h4>
                     <p className="text-sm text-gray-600 mt-1">
                       {new Date(sprint.start_date).toLocaleDateString()} - {new Date(sprint.end_date).toLocaleDateString()}
                     </p>
                     {sprint.sprint_goal && (
-                      <p className="text-sm text-gray-500 mt-1">{sprint.sprint_goal}</p>
+                      <p className="text-sm text-gray-500 mt-1"><T>{sprint.sprint_goal}</T></p>
                     )}
                   </div>
                   <div className="flex items-center gap-4">
@@ -432,7 +435,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
         <div className="modal-backdrop" onClick={() => { setSelectedSprint(null); setEditMode(false) }}>
           <div className="modal-content max-w-4xl" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">{selectedSprint.name}</h2>
+              <h2 className="modal-title"><T>{selectedSprint.name}</T></h2>
               <div className="flex items-center gap-2">
                 <button
                   className="btn btn-secondary"
@@ -463,7 +466,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="form-label">Name</label>
-                    <p className="text-[#0F172A]">{selectedSprint.name}</p>
+                    <p className="text-[#0F172A]"><T>{selectedSprint.name}</T></p>
                   </div>
                   <div>
                     <label className="form-label">Status</label>
@@ -480,7 +483,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
                   </div>
                   <div className="col-span-2">
                     <label className="form-label">Description</label>
-                    <p className="text-[#0F172A]">{selectedSprint.description || 'No description'}</p>
+                    <p className="text-[#0F172A]"><T>{selectedSprint.description || 'No description'}</T></p>
                   </div>
                   <div>
                     <label className="form-label">Start Date</label>

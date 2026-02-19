@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Calendar = () => {
+  const { t } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -128,8 +130,8 @@ const Calendar = () => {
     <div>
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Calendar</h1>
-          <p className="text-gray-600">Schedule and manage events</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('calendar.title')}</h1>
+          <p className="text-gray-600">{t('calendar.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
