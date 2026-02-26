@@ -14,6 +14,13 @@ class Api::V1::TestCasesController < ApplicationController
     if params[:project_id].present?
       test_cases = test_cases.where(project_id: params[:project_id])
     end
+
+    # Full-text search
+    if params[:q].present?
+      q = "%#{params[:q]}%"
+      test_cases = test_cases.where('test_cases.title LIKE ? OR test_cases.description LIKE ?', q, q)
+    end
+
     render json: {
       test_cases: test_cases.map { |tc| {
         id: tc.id,
@@ -165,9 +172,167 @@ class Api::V1::TestCasesController < ApplicationController
       render json: { error: 'Access denied' }, status: :forbidden
       return
     end
-    
+
     test_case.destroy
     render json: { message: 'Test case deleted successfully' }
+  end
+
+  def import
+    require 'csv'
+    file = params[:file]
+
+    unless file.present?
+      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      return
+    end
+
+    project_id = params[:project_id] ||
+                 (current_user&.admin? ? Project.first&.id : current_user&.projects&.first&.id)
+    imported = 0
+    skipped  = 0
+    errors   = []
+
+    begin
+      csv_text = file.read.force_encoding('UTF-8')
+      CSV.parse(csv_text, headers: true, skip_blanks: true) do |row|
+        title = row['title'] || row['Title'] || row[0]
+        if title.blank?
+          skipped += 1
+          next
+        end
+
+        tc = TestCase.new(
+          title:            title.to_s.strip,
+          description:      row['description'] || row['Description'] || '',
+          steps:            row['steps'] || row['test_steps'] || row['Steps'] || '',
+          expected_results: row['expected_results'] || row['Expected Results'] || '',
+          status:           (row['status']&.strip.presence || 'draft'),
+          priority:         (row['priority']&.strip.presence || 'medium'),
+          test_type:        (row['test_type']&.strip.presence || 'manual'),
+          project_id:       project_id,
+          created_by_id:    current_user&.id
+        )
+
+        if tc.save
+          imported += 1
+        else
+          errors << { row: imported + skipped + 1, errors: tc.errors.full_messages }
+          skipped += 1
+        end
+      end
+    rescue CSV::MalformedCSVError => e
+      render json: { error: "Invalid CSV format: #{e.message}" }, status: :unprocessable_entity
+      return
+    end
+
+    render json: { imported: imported, skipped: skipped, errors: errors }, status: :created
+  end
+
+  def export
+    test_cases = TestCase.all
+    test_cases = test_cases.where(project_id: params[:project_id]) if params[:project_id].present?
+
+    csv_data = "id,title,status,priority,test_type,project\n"
+    test_cases.each do |tc|
+      csv_data += "#{tc.id},\"#{tc.title}\",#{tc.status},#{tc.priority},#{tc.test_type},\"#{tc.project&.name}\"\n"
+    end
+
+    send_data csv_data, type: 'text/csv', disposition: 'attachment', filename: 'test_cases.csv'
+  end
+
+  def history
+    test_case = TestCase.find(params[:id])
+    runs = TestRun.where("notes LIKE ?", "%#{test_case.id}%").order(created_at: :desc).limit(20)
+    render json: { history: runs }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test case not found' }, status: :not_found
+  end
+
+  def attachments
+    test_case = TestCase.find(params[:id])
+    attachments = TestCaseAttachment.where(test_case_id: test_case.id) rescue []
+    render json: { attachments: attachments }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test case not found' }, status: :not_found
+  end
+
+  def upload_attachment
+    test_case = TestCase.find(params[:id])
+    file = params[:file]
+
+    unless file.present?
+      render json: { error: 'No file provided' }, status: :unprocessable_entity
+      return
+    end
+
+    render json: { message: 'Attachment uploaded', filename: file.original_filename }, status: :created
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test case not found' }, status: :not_found
+  end
+
+  def clone
+    original = TestCase.find(params[:id])
+    cloned = original.dup
+    cloned.title = "Copy of #{original.title}"
+    cloned.status = 'draft'
+    cloned.created_by_id = current_user&.id || original.created_by_id
+
+    if cloned.save
+      render json: test_case_json(cloned), status: :created
+    else
+      render json: { errors: cloned.errors }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test case not found' }, status: :not_found
+  end
+
+  def run
+    test_case = TestCase.find(params[:id])
+    test_run = TestRun.new(
+      name: "Run: #{test_case.title}",
+      status: 'running',
+      project_id: test_case.project_id,
+      created_by_id: current_user&.id,
+      started_at: Time.current
+    )
+
+    if test_run.save
+      render json: { message: 'Test run started', test_run_id: test_run.id, status: test_run.status }, status: :created
+    else
+      render json: { errors: test_run.errors }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test case not found' }, status: :not_found
+  end
+
+  # POST /api/v1/test_cases/bulk_delete  { ids: [1,2,3] }
+  def bulk_delete
+    ids = Array(params[:ids]).map(&:to_i)
+    scope = TestCase.where(id: ids)
+    unless current_user&.admin?
+      accessible = current_user&.projects&.pluck(:id) || []
+      scope = scope.where(project_id: accessible)
+    end
+    deleted = scope.destroy_all.count
+    render json: { message: "#{deleted} test case(s) deleted", deleted: deleted }
+  end
+
+  # POST /api/v1/test_cases/bulk_update_status  { ids: [1,2], status: 'active' }
+  def bulk_update_status
+    ids    = Array(params[:ids]).map(&:to_i)
+    status = params[:status]
+    allowed = %w[draft active in_progress passed failed skipped blocked]
+    unless allowed.include?(status)
+      render json: { error: "Invalid status. Allowed: #{allowed.join(', ')}" }, status: :unprocessable_entity
+      return
+    end
+    scope = TestCase.where(id: ids)
+    unless current_user&.admin?
+      accessible = current_user&.projects&.pluck(:id) || []
+      scope = scope.where(project_id: accessible)
+    end
+    updated = scope.update_all(status: status, updated_at: Time.current)
+    render json: { message: "#{updated} test case(s) updated to '#{status}'", updated: updated }
   end
 
   private

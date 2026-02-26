@@ -9,6 +9,10 @@ class Ticket < ApplicationRecord
   belongs_to :test_case, optional: true
   belongs_to :test_run, optional: true
   has_many :comments, as: :commentable, dependent: :destroy
+  has_many :ticket_time_logs, dependent: :destroy
+  has_many :ticket_relationships, dependent: :destroy
+  has_many :ticket_watchers, dependent: :destroy
+  has_many :watchers, through: :ticket_watchers, source: :user
 
   scope :open, -> { where(status: %w[todo in_progress in_review qa_ready]) }
   scope :closed, -> { where(status: 'done') }

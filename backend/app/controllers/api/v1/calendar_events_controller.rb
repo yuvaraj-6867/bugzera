@@ -18,7 +18,28 @@ class Api::V1::CalendarEventsController < ApplicationController
     @event.created_by = current_user
 
     if @event.save
-      render json: event_json(@event), status: :created
+      # Handle recurring events
+      recurrence_rule  = params[:recurrence_rule].to_s.strip  # daily | weekly | monthly
+      recurrence_count = [[params[:recurrence_count].to_i, 1].max, 52].min
+
+      if recurrence_rule.in?(%w[daily weekly monthly]) && recurrence_count > 1
+        created_events = [@event]
+        (recurrence_count - 1).times do |i|
+          offset = case recurrence_rule
+                   when 'daily'   then (i + 1).days
+                   when 'weekly'  then (i + 1).weeks
+                   when 'monthly' then (i + 1).months
+                   end
+          copy = CalendarEvent.new(
+            event_params.merge(start_time: @event.start_time + offset)
+          )
+          copy.created_by = current_user
+          created_events << copy if copy.save
+        end
+        render json: created_events.map { |e| event_json(e) }, status: :created
+      else
+        render json: event_json(@event), status: :created
+      end
     else
       render json: { errors: @event.errors }, status: :unprocessable_entity
     end
@@ -37,7 +58,33 @@ class Api::V1::CalendarEventsController < ApplicationController
     head :no_content
   end
 
+  def upcoming
+    limit  = (params[:limit] || 10).to_i
+    events = CalendarEvent.includes(:created_by)
+                          .where('start_time >= ?', Time.current)
+                          .order(start_time: :asc)
+                          .limit(limit)
+    render json: events.map { |e| event_json(e) }
+  end
 
+  def import
+    render json: { message: 'Import received', count: 0 }
+  end
+
+  def export
+    events = CalendarEvent.includes(:created_by).order(start_time: :asc)
+    ical = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//BugZera//EN\r\n"
+    events.each do |e|
+      ical += "BEGIN:VEVENT\r\n"
+      ical += "UID:#{e.id}@bugzera\r\n"
+      ical += "SUMMARY:#{e.title}\r\n"
+      ical += "DTSTART:#{e.start_time.utc.strftime('%Y%m%dT%H%M%SZ')}\r\n" if e.start_time
+      ical += "DESCRIPTION:#{e.description}\r\n" if e.description.present?
+      ical += "END:VEVENT\r\n"
+    end
+    ical += "END:VCALENDAR\r\n"
+    send_data ical, type: 'text/calendar', disposition: 'attachment', filename: 'events.ics'
+  end
 
   private
 

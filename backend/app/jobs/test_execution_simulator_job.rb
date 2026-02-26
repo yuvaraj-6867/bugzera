@@ -45,6 +45,18 @@ class TestExecutionSimulatorJob < ApplicationJob
       # Send notifications only for pass/fail
       if ['passed', 'failed'].include?(final_status)
         send_slack_notification(test_run, final_status)
+        NotificationService.test_run_completed(test_run) rescue nil
+        WebhookService.deliver_event(test_run.project_id, 'test_run.completed', { id: test_run.id, status: final_status, project: test_run.project&.name }) rescue nil
+
+        # Direct email to the test run creator
+        if test_run.user
+          label = final_status == 'passed' ? 'Passed ✓' : 'Failed ✗'
+          UserMailer.notification_email(
+            test_run.user.email,
+            "Test Run ##{test_run.id} #{label}",
+            "Your test run ##{test_run.id} for project #{test_run.project&.name} has #{final_status}.\nExecution time: #{test_run.execution_time}s."
+          ).deliver_now rescue nil
+        end
       end
     end
   end

@@ -49,7 +49,7 @@ class Api::V1::LabelsController < ApplicationController
       name: label.name,
       color: label.color,
       description: label.description,
-      tickets_count: label.tickets_count
+      created_at: label.created_at
     }
   end
 end

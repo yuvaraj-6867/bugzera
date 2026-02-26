@@ -1,185 +1,134 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
-import { T } from '../../components/AutoTranslate'
-
-interface ActivityItem {
-  id: string
-  user: string
-  action: string
-  item: string
-  type: string
-  time: string
-  timestamp: number
-}
+import BLoader from '../../components/BLoader'
 
 const Activity = () => {
   const { t } = useLanguage()
-  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
-  const headers = {
-    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-  }
+  const [page, setPage] = useState(1)
+  const [meta, setMeta] = useState({ total: 0, pages: 1 })
+  const [loadingMore, setLoadingMore] = useState(false)
+  const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
 
   const timeAgo = (dateStr: string) => {
-    const now = new Date().getTime()
-    const date = new Date(dateStr).getTime()
-    const diff = now - date
+    const diff = Date.now() - new Date(dateStr).getTime()
     const mins = Math.floor(diff / 60000)
     if (mins < 1) return 'Just now'
-    if (mins < 60) return `${mins} minute${mins > 1 ? 's' : ''} ago`
+    if (mins < 60) return `${mins}m ago`
     const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    if (hours < 24) return `${hours}h ago`
     const days = Math.floor(hours / 24)
-    if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`
-    const months = Math.floor(days / 30)
-    return `${months} month${months > 1 ? 's' : ''} ago`
+    if (days < 30) return `${days}d ago`
+    return `${Math.floor(days / 30)}mo ago`
   }
 
-  const fetchActivities = useCallback(async () => {
-    setLoading(true)
-    const allActivities: ActivityItem[] = []
+  const typeColors: Record<string, string> = {
+    Ticket: 'bg-red-100 text-red-700',
+    TestCase: 'bg-blue-100 text-blue-700',
+    TestRun: 'bg-indigo-100 text-indigo-700',
+    Document: 'bg-green-100 text-green-700',
+    Sprint: 'bg-purple-100 text-purple-700',
+    Project: 'bg-orange-100 text-orange-700',
+    Article: 'bg-teal-100 text-teal-700',
+    Comment: 'bg-pink-100 text-pink-700',
+  }
 
+  const typeIcons: Record<string, string> = {
+    Ticket: '🐛', TestCase: '🧪', TestRun: '▶️',
+    Document: '📄', Sprint: '🏃', Project: '📁',
+    Article: '📖', Comment: '💬',
+  }
+
+  const fetchActivities = useCallback(async (pageNum = 1, append = false) => {
+    pageNum === 1 ? setLoading(true) : setLoadingMore(true)
     try {
-      // Fetch tickets
-      const ticketsRes = await fetch('http://localhost:3000/api/v1/tickets', { headers })
-      if (ticketsRes.ok) {
-        const data = await ticketsRes.json()
-        const tickets = data.tickets || data || []
-        tickets.forEach((t: any) => {
-          allActivities.push({
-            id: `ticket-${t.id}`,
-            user: t.created_by || 'Unknown',
-            action: t.updated_at !== t.created_at ? 'updated ticket' : 'created ticket',
-            item: `${t.title}`,
-            type: 'ticket',
-            time: timeAgo(t.updated_at || t.created_at),
-            timestamp: new Date(t.updated_at || t.created_at).getTime()
-          })
-        })
+      const params = new URLSearchParams({ page: String(pageNum), per_page: '30' })
+      if (filter !== 'all') params.set('action_type', filter)
+      const res = await fetch(`/api/v1/activities?${params}`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        const items = data.activities || []
+        setActivities(prev => append ? [...prev, ...items] : items)
+        setMeta(data.meta || { total: items.length, pages: 1 })
+        return
       }
-
-      // Fetch test cases
-      const tcRes = await fetch('http://localhost:3000/api/v1/test_cases', { headers })
-      if (tcRes.ok) {
-        const data = await tcRes.json()
-        const testCases = data.test_cases || data || []
-        testCases.forEach((tc: any) => {
-          allActivities.push({
-            id: `tc-${tc.id}`,
-            user: tc.created_by || 'Unknown',
-            action: tc.updated_at !== tc.created_at ? 'updated test case' : 'created test case',
-            item: `${tc.title}`,
-            type: 'test-case',
-            time: timeAgo(tc.updated_at || tc.created_at),
-            timestamp: new Date(tc.updated_at || tc.created_at).getTime()
-          })
-        })
-      }
-
-      // Fetch documents
-      const docsRes = await fetch('http://localhost:3000/api/v1/documents', { headers })
-      if (docsRes.ok) {
-        const data = await docsRes.json()
-        const docs = data.documents || data || []
-        docs.forEach((d: any) => {
-          allActivities.push({
-            id: `doc-${d.id}`,
-            user: d.uploaded_by || 'Unknown',
-            action: 'uploaded document',
-            item: `${d.title}`,
-            type: 'document',
-            time: timeAgo(d.updated_at || d.created_at),
-            timestamp: new Date(d.updated_at || d.created_at).getTime()
-          })
-        })
-      }
-
-      // Fetch sprints
-      const sprintsRes = await fetch('http://localhost:3000/api/v1/sprints', { headers })
-      if (sprintsRes.ok) {
-        const data = await sprintsRes.json()
-        const sprints = data.sprints || data || []
-        sprints.forEach((s: any) => {
-          allActivities.push({
-            id: `sprint-${s.id}`,
-            user: 'System',
-            action: s.status === 'active' ? 'started sprint' : 'created sprint',
-            item: `${s.name}`,
-            type: 'sprint',
-            time: timeAgo(s.updated_at || s.created_at),
-            timestamp: new Date(s.updated_at || s.created_at).getTime()
-          })
-        })
-      }
-
-      // Sort by most recent
-      allActivities.sort((a, b) => b.timestamp - a.timestamp)
-      setActivities(allActivities)
     } catch (err) {
-      console.error('Failed to fetch activities:', err)
-    } finally {
-      setLoading(false)
+      console.error('Activities API error, falling back:', err)
     }
-  }, [])
+
+    // Fallback: aggregate from existing endpoints (when activities table is empty)
+    const all: any[] = []
+    try {
+      const [tRes, tcRes, docsRes] = await Promise.all([
+        fetch('/api/v1/tickets', { headers }),
+        fetch('/api/v1/test_cases', { headers }),
+        fetch('/api/v1/documents', { headers }),
+      ])
+      if (tRes.ok) {
+        const { tickets = [] } = await tRes.json()
+        tickets.forEach((t: any) => all.push({ id: `ticket-${t.id}`, trackable_type: 'Ticket', action: t.updated_at !== t.created_at ? 'updated' : 'created', owner_name: t.created_by || 'Unknown', owner_initials: (t.created_by || '?')[0].toUpperCase(), trackable_name: t.title, created_at: t.updated_at || t.created_at }))
+      }
+      if (tcRes.ok) {
+        const { test_cases = [] } = await tcRes.json()
+        test_cases.forEach((tc: any) => all.push({ id: `tc-${tc.id}`, trackable_type: 'TestCase', action: tc.updated_at !== tc.created_at ? 'updated' : 'created', owner_name: tc.created_by || 'Unknown', owner_initials: (tc.created_by || '?')[0].toUpperCase(), trackable_name: tc.title, created_at: tc.updated_at || tc.created_at }))
+      }
+      if (docsRes.ok) {
+        const { documents = [] } = await docsRes.json()
+        documents.forEach((d: any) => all.push({ id: `doc-${d.id}`, trackable_type: 'Document', action: 'uploaded', owner_name: d.uploaded_by || 'Unknown', owner_initials: (d.uploaded_by || '?')[0].toUpperCase(), trackable_name: d.title, created_at: d.updated_at || d.created_at }))
+      }
+    } catch (_) {}
+    all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    setActivities(all)
+    setMeta({ total: all.length, pages: 1 })
+    setLoading(false)
+  }, [filter])
 
   useEffect(() => {
-    fetchActivities()
+    setPage(1)
+    fetchActivities(1, false)
   }, [fetchActivities])
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'ticket': return 'bg-red-100 text-red-700'
-      case 'test-case': return 'bg-blue-100 text-blue-700'
-      case 'document': return 'bg-green-100 text-green-700'
-      case 'sprint': return 'bg-purple-100 text-purple-700'
-      default: return 'bg-gray-100 text-gray-700'
-    }
+  const loadMore = () => {
+    const next = page + 1
+    setPage(next)
+    fetchActivities(next, true)
   }
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'ticket': return 'Ticket'
-      case 'test-case': return 'Test Case'
-      case 'document': return 'Document'
-      case 'sprint': return 'Sprint'
-      default: return type
-    }
-  }
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
-
-  const filteredActivities = filter === 'all'
+  const displayActivities = filter === 'all'
     ? activities
-    : activities.filter(a => a.type === filter)
+    : activities.filter(a => a.trackable_type === filter || a.action?.includes(filter))
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC] p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-[#0F172A] mb-2">{t('activity.title')}</h1>
-        <p className="text-[#64748B]">{t('activity.subtitle')}</p>
+    <div className="min-h-screen bg-[#FAFBFC] dark:bg-transparent p-8">
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-bold text-[#0F172A] dark:text-gray-100 mb-2">{t('activity.title')}</h1>
+          <p className="text-[#64748B] dark:text-gray-400">{t('activity.subtitle')}</p>
+        </div>
+        <a href="/api/v1/activities/export"
+          className="btn btn-outline text-sm"
+          target="_blank" rel="noopener noreferrer">
+          ↓ Export CSV
+        </a>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex gap-3">
+      <div className="mb-6 flex flex-wrap gap-2">
         {[
           { value: 'all', label: 'All' },
-          { value: 'ticket', label: 'Tickets' },
-          { value: 'test-case', label: 'Test Cases' },
-          { value: 'document', label: 'Documents' },
-          { value: 'sprint', label: 'Sprints' },
+          { value: 'Ticket', label: '🐛 Tickets' },
+          { value: 'TestCase', label: '🧪 Test Cases' },
+          { value: 'TestRun', label: '▶️ Test Runs' },
+          { value: 'Document', label: '📄 Documents' },
+          { value: 'Sprint', label: '🏃 Sprints' },
+          { value: 'Project', label: '📁 Projects' },
         ].map(f => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
+          <button key={f.value} onClick={() => setFilter(f.value)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              filter === f.value
-                ? 'bg-accent-neon text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
+              filter === f.value ? 'bg-accent-neon text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50'
+            }`}>
             {f.label}
           </button>
         ))}
@@ -187,30 +136,53 @@ const Activity = () => {
 
       {/* Activity Stream */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading activities...</div>
-      ) : filteredActivities.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">No activities found</div>
-      ) : (
-        <div className="space-y-3">
-          {filteredActivities.map(activity => (
-            <div key={activity.id} className="bg-white rounded-lg border border-gray-200 p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600 flex-shrink-0">
-                {getInitials(activity.user)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0F172A]">
-                  <span className="font-semibold">{activity.user}</span>
-                  {' '}<span className="text-gray-500"><T>{activity.action}</T></span>
-                  {' '}<span className="font-medium text-accent-neon"><T>{activity.item}</T></span>
-                </p>
-                <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
-              </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${getTypeColor(activity.type)}`}>
-                {getTypeLabel(activity.type)}
-              </span>
-            </div>
-          ))}
+        <BLoader />
+      ) : displayActivities.length === 0 ? (
+        <div className="card text-center py-12 text-gray-400">
+          <div className="text-4xl mb-3">📭</div>
+          <p>No activities found</p>
+          <p className="text-sm mt-1">Activities will appear here as your team uses BugZera</p>
         </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {displayActivities.map((activity: any) => (
+              <div key={activity.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-neon to-accent-electric flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                  {activity.owner_initials || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-[#0F172A] dark:text-gray-100">
+                    <span className="font-semibold">{activity.owner_name || 'Unknown'}</span>
+                    <span className="text-gray-500 dark:text-gray-400 mx-1">{activity.action}</span>
+                    {activity.trackable_type && (
+                      <span className="text-gray-400 dark:text-gray-500 mr-1 text-xs">
+                        {typeIcons[activity.trackable_type] || '•'}
+                      </span>
+                    )}
+                    <span className="font-medium text-accent-neon">{activity.trackable_name || 'item'}</span>
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">{timeAgo(activity.created_at)}</p>
+                </div>
+                {activity.trackable_type && (
+                  <span className={`px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${typeColors[activity.trackable_type] || 'bg-gray-100 text-gray-600'}`}>
+                    {activity.trackable_type.replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Load More */}
+          {page < meta.pages && (
+            <div className="text-center mt-6">
+              <button onClick={loadMore} disabled={loadingMore}
+                className="btn btn-outline disabled:opacity-50">
+                {loadingMore ? 'Loading...' : 'Load More'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

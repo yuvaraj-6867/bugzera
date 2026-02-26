@@ -2,9 +2,19 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import * as XLSX from 'xlsx'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
+import { usePermissions } from '../../hooks/usePermissions'
+import BLoader from '../../components/BLoader'
+
+const APPROVAL_BADGE: Record<string, string> = {
+  draft:       'bg-gray-100 text-gray-600',
+  in_review:   'bg-yellow-100 text-yellow-700',
+  approved:    'bg-green-100 text-green-700',
+  rejected:    'bg-red-100 text-red-600',
+}
 
 const Documents = () => {
   const { t } = useLanguage()
+  const { canCreate, canDelete, isAdminOrManager } = usePermissions()
   const [showModal, setShowModal] = useState(false)
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,7 +32,7 @@ const Documents = () => {
   const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3000/api/v1/documents', {
+      const response = await fetch('/api/v1/documents', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -82,7 +92,7 @@ const Documents = () => {
       formDataToSend.append('description', formData.description)
       formDataToSend.append('tag_list', formData.tags)
 
-      const response = await fetch('http://localhost:3000/api/v1/documents', {
+      const response = await fetch('/api/v1/documents', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -114,7 +124,7 @@ const Documents = () => {
 
   const handleDownload = async (documentId: number, title: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/documents/${documentId}/download`, {
+      const response = await fetch(`/api/v1/documents/${documentId}/download`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -157,6 +167,33 @@ const Documents = () => {
     return { label: ext.toUpperCase() || 'File', color: 'bg-gray-100 text-gray-800' }
   }
 
+  const handleApproval = async (documentId: number, action: 'approve' | 'reject' | 'in_review') => {
+    const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json' }
+    if (action === 'in_review') {
+      await fetch(`/api/v1/documents/${documentId}`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ document: { approval_status: 'in_review' } })
+      })
+    } else {
+      await fetch(`/api/v1/documents/${documentId}/${action}`, { method: 'POST', headers })
+    }
+    fetchDocuments()
+  }
+
+  const handleDelete = async (documentId: number, title: string) => {
+    if (!confirm(`Delete "${title}"?`)) return
+    try {
+      const response = await fetch(`/api/v1/documents/${documentId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+      })
+      if (!response.ok) throw new Error('Failed to delete document')
+      fetchDocuments()
+    } catch (error) {
+      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to delete document'}`)
+    }
+  }
+
   const openPreview = async (url: string, name: string) => {
     const type = isImageFile(name) ? 'image' : isVideoFile(name) ? 'video' : isPdfFile(name) ? 'pdf' : isExcelFile(name) ? 'excel' : 'other'
     setExcelData(null)
@@ -186,25 +223,23 @@ const Documents = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('documents.title')}</h1>
           <p className="text-gray-600">{t('documents.subtitle')}</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary"
-        >
-          <span>+</span> Upload Document
-        </button>
+        {canCreate.documents && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="btn btn-primary"
+          >
+            <span>+</span> Upload Document
+          </button>
+        )}
       </div>
 
       {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading documents...</p>
-        </div>
-      )}
+      {loading && <BLoader />}
 
       {/* Empty State */}
       {!loading && documents.length === 0 && (
         <div className="card text-center py-12">
-          <p className="text-gray-500">No documents yet. Upload your first document!</p>
+          <p className="text-gray-500">{canCreate.documents ? 'No documents yet. Upload your first document!' : 'No documents yet.'}</p>
         </div>
       )}
 
@@ -221,13 +256,13 @@ const Documents = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded By</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {documents.map((doc) => {
-                  const fileType = getFileType(doc.title)
                   return (
                     <tr key={doc.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -256,23 +291,48 @@ const Documents = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         v{doc.version}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${APPROVAL_BADGE[doc.approval_status || 'draft']}`}>
+                          {(doc.approval_status || 'draft').replace('_', ' ')}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(doc.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => openPreview(`http://localhost:3000${doc.file_url}`, doc.title)}
-                            className="text-green-600 hover:text-green-900 font-medium"
-                          >
-                            View
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          {/* View */}
+                          <button title="View" onClick={() => openPreview(`http://localhost:3000${doc.file_url}`, doc.title)} className="p-1.5 rounded text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                           </button>
-                          <button
-                            onClick={() => handleDownload(doc.id, doc.title)}
-                            className="text-blue-600 hover:text-blue-900 font-medium"
-                          >
-                            Download
+                          {/* Download */}
+                          <button title="Download" onClick={() => handleDownload(doc.id, doc.title)} className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                           </button>
+                          {/* Submit for review */}
+                          {doc.approval_status === 'draft' && (
+                            <button title="Submit for Review" onClick={() => handleApproval(doc.id, 'in_review')} className="p-1.5 rounded text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                            </button>
+                          )}
+                          {/* Approve */}
+                          {doc.approval_status === 'in_review' && isAdminOrManager && (
+                            <button title="Approve" onClick={() => handleApproval(doc.id, 'approve')} className="p-1.5 rounded text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            </button>
+                          )}
+                          {/* Reject */}
+                          {doc.approval_status === 'in_review' && isAdminOrManager && (
+                            <button title="Reject" onClick={() => handleApproval(doc.id, 'reject')} className="p-1.5 rounded text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          )}
+                          {/* Delete */}
+                          {canDelete.documents && (
+                            <button title="Delete" onClick={() => handleDelete(doc.id, doc.title)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -323,7 +383,7 @@ const Documents = () => {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="p-8 text-center text-gray-500">Loading spreadsheet...</div>
+                  <BLoader />
                 )}
               </div>
             ) : (

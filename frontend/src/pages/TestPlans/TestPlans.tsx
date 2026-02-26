@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { usePermissions } from '../../hooks/usePermissions'
+import BLoader from '../../components/BLoader'
 
 interface TestCase {
   id: number
@@ -29,6 +31,7 @@ interface TestPlan {
 
 const TestPlans = () => {
   const { t } = useLanguage()
+  const { canCreate, canEdit, canDelete } = usePermissions()
   const [showModal, setShowModal] = useState(false)
   const [showAddTestCaseModal, setShowAddTestCaseModal] = useState(false)
   const [testPlans, setTestPlans] = useState<TestPlan[]>([])
@@ -46,7 +49,7 @@ const TestPlans = () => {
   const fetchTestPlans = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3000/api/v1/test_plans', {
+      const response = await fetch('/api/v1/test_plans', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -66,7 +69,7 @@ const TestPlans = () => {
 
   const fetchAllTestCases = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/test_cases', {
+      const response = await fetch('/api/v1/test_cases', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -95,7 +98,7 @@ const TestPlans = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('http://localhost:3000/api/v1/test_plans', {
+      const response = await fetch('/api/v1/test_plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,9 +128,24 @@ const TestPlans = () => {
     }
   }
 
+  const handleDeletePlan = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('Delete this test plan?')) return
+    try {
+      const res = await fetch(`/api/v1/test_plans/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+      })
+      if (!res.ok) throw new Error('Failed to delete test plan')
+      setTestPlans(prev => prev.filter(p => p.id !== id))
+    } catch (error) {
+      alert(`❌ Error: ${error instanceof Error ? error.message : 'Delete failed'}`)
+    }
+  }
+
   const viewTestPlan = async (testPlan: TestPlan) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/test_plans/${testPlan.id}`, {
+      const response = await fetch(`/api/v1/test_plans/${testPlan.id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -147,7 +165,7 @@ const TestPlans = () => {
     if (!selectedTestPlan) return
 
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/test_plans/${selectedTestPlan.id}/add_test_case`, {
+      const response = await fetch(`/api/v1/test_plans/${selectedTestPlan.id}/add_test_case`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -175,7 +193,7 @@ const TestPlans = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/v1/test_plans/${selectedTestPlan.id}/remove_test_case/${testCaseId}`,
+        `/api/v1/test_plans/${selectedTestPlan.id}/remove_test_case/${testCaseId}`,
         {
           method: 'DELETE',
           headers: {
@@ -209,26 +227,21 @@ const TestPlans = () => {
           </div>
           <p className="text-gray-600">{t('testPlans.subtitle')}</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
-          <span>+</span> New Test Plan
-        </button>
+        {canCreate.testPlans && (
+          <button onClick={() => setShowModal(true)} className="btn btn-primary">
+            <span>+</span> New Test Plan
+          </button>
+        )}
       </div>
 
       {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading test plans...</p>
-        </div>
-      )}
+      {loading && <BLoader />}
 
       {/* Empty State */}
       {!loading && testPlans.length === 0 && (
         <div className="card text-center py-12">
-          <div className="mb-4">
-            <span className="text-6xl">📋</span>
-          </div>
           <p className="text-gray-500 text-lg mb-2">No test plans yet</p>
-          <p className="text-gray-400 text-sm">Create your first test plan to organize test cases!</p>
+          {canCreate.testPlans && <p className="text-gray-400 text-sm">Create your first test plan to organize test cases!</p>}
         </div>
       )}
 
@@ -248,13 +261,20 @@ const TestPlans = () => {
                   </span>
                   <h3 className="text-lg font-bold text-gray-900 mt-1">{plan.name}</h3>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                  plan.status === 'active' ? 'bg-green-100 text-green-800' :
-                  plan.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {plan.status}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    plan.status === 'active' ? 'bg-green-100 text-green-800' :
+                    plan.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {plan.status}
+                  </span>
+                  {canDelete.testPlans && (
+                    <button title="Delete" onClick={(e) => handleDeletePlan(plan.id, e)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-gray-600 mb-4">{plan.description || 'No description'}</p>
 
@@ -313,14 +333,16 @@ const TestPlans = () => {
               <button onClick={() => setSelectedTestPlan(null)} className="text-2xl">&times;</button>
             </div>
             <div className="modal-body">
-              <div className="mb-4">
-                <button
-                  onClick={() => setShowAddTestCaseModal(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  + Add Test Case
-                </button>
-              </div>
+              {canEdit.testPlans && (
+                <div className="mb-4">
+                  <button
+                    onClick={() => setShowAddTestCaseModal(true)}
+                    className="btn btn-primary btn-sm"
+                  >
+                    + Add Test Case
+                  </button>
+                </div>
+              )}
 
               {/* Test Cases List */}
               {selectedTestPlan.test_cases && selectedTestPlan.test_cases.length > 0 ? (
@@ -365,12 +387,11 @@ const TestPlans = () => {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <button
-                              onClick={() => removeTestCase(tc.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              Remove
-                            </button>
+                            {canEdit.testPlans && (
+                              <button title="Remove" onClick={() => removeTestCase(tc.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -477,6 +498,7 @@ const TestPlans = () => {
                         value={formData.end_date}
                         onChange={handleChange}
                         className="form-input"
+                        min={formData.start_date || undefined}
                       />
                     </div>
                   </div>

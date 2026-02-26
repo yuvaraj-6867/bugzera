@@ -144,7 +144,7 @@ BugZera covers:
 #### 4.2 Analytics/Reports Tab  
 - Customizable dashboard with widgets
 - Test execution trend charts
-- Sprint velocity and burndown
+- Sprint velocity
 - Defect density metrics
 - Export to PDF/Excel
 - Scheduled reports
@@ -321,7 +321,6 @@ BugZera covers:
 - Trends & Analytics (charts)
 - Recent Test Runs (last 10)
 - Upcoming Calendar Events (next 5)
-- Quick Actions (Create Test, Create Ticket, Run Test, Schedule Event)
 
 **Customization:**
 - Drag-and-drop widgets
@@ -1264,7 +1263,6 @@ sprints:
 - capacity (integer, story points)
 - velocity (decimal, calculated)
 - completion_percentage (decimal)
-- burndown_data (jsonb)
 - retrospective_notes (text)
 - team_id (foreign key)
 - created_by_id (foreign key → users)

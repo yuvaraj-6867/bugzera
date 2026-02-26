@@ -106,7 +106,7 @@ class Api::V1::ProjectsController < ApplicationController
   def remove_user
     project = Project.find(params[:id])
     project_user = project.project_users.find_by(user_id: params[:user_id])
-    
+
     if project_user&.destroy
       render json: { message: 'User removed successfully' }
     else
@@ -114,10 +114,26 @@ class Api::V1::ProjectsController < ApplicationController
     end
   end
 
+  def update_user_role
+    project = Project.find(params[:id])
+    project_user = project.project_users.find_by(user_id: params[:user_id])
+
+    unless project_user
+      render json: { error: 'User not in this project' }, status: :not_found
+      return
+    end
+
+    if project_user.update(role: params[:role])
+      render json: { message: 'Role updated', role: project_user.role }
+    else
+      render json: { errors: project_user.errors }, status: :unprocessable_entity
+    end
+  end
+
   def test_cases
     project = Project.find(params[:id])
     test_cases = project.test_cases.includes(:assigned_user, :created_by)
-    
+
     render json: {
       test_cases: test_cases.map do |tc|
         {
@@ -128,6 +144,29 @@ class Api::V1::ProjectsController < ApplicationController
           created_at: tc.created_at
         }
       end
+    }
+  end
+
+  def statistics
+    project = Project.find(params[:id])
+
+    total_test_cases   = project.test_cases.count
+    passed_test_cases  = project.test_cases.where(status: 'passed').count
+    failed_test_cases  = project.test_cases.where(status: 'failed').count
+    total_test_runs    = TestRun.where(project_id: project.id).count
+    open_tickets       = project.tickets.where(status: ['open', 'in_progress']).count rescue 0
+    total_tickets      = project.tickets.count rescue 0
+    members_count      = project.project_users.count
+
+    render json: {
+      total_test_cases: total_test_cases,
+      passed_test_cases: passed_test_cases,
+      failed_test_cases: failed_test_cases,
+      pass_rate: total_test_cases > 0 ? (passed_test_cases.to_f / total_test_cases * 100).round(1) : 0,
+      total_test_runs: total_test_runs,
+      open_tickets: open_tickets,
+      total_tickets: total_tickets,
+      members_count: members_count
     }
   end
 

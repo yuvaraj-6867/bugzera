@@ -1,11 +1,20 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { usePermissions } from '../../hooks/usePermissions'
+import BLoader from '../../components/BLoader'
 
 const Users = () => {
   const { t } = useLanguage()
+  const { canCreate, canEdit, canDelete } = usePermissions()
   const [showModal, setShowModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteForm, setInviteForm] = useState({ email: '', first_name: '', last_name: '', role: 'member' })
+  const [inviting, setInviting] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingUser, setEditingUser] = useState<any>(null)
+  const [editUserData, setEditUserData] = useState({ first_name: '', last_name: '', email: '', role: '', phone: '', location: '' })
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -43,7 +52,7 @@ const Users = () => {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3000/api/v1/users', {
+      const response = await fetch('/api/v1/users', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -66,6 +75,68 @@ const Users = () => {
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
+
+  const handleEditUser = (user: any) => {
+    setEditingUser(user)
+    setEditUserData({ first_name: user.first_name || '', last_name: user.last_name || '', email: user.email || '', role: user.role || '', phone: user.phone || '', location: user.location || '' })
+    setShowEditModal(true)
+  }
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return
+    const res = await fetch(`/api/v1/users/${editingUser.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+      body: JSON.stringify({ user: editUserData })
+    })
+    if (res.ok) { setShowEditModal(false); fetchUsers() }
+    else { const e = await res.json(); alert(e.errors || 'Update failed') }
+  }
+
+  const handleDeleteUser = async (id: number) => {
+    if (!confirm('Delete this user?')) return
+    try {
+      const res = await fetch(`/api/v1/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+      })
+      if (!res.ok) throw new Error('Failed to delete user')
+      setUsers(prev => prev.filter(u => u.id !== id))
+    } catch (error) {
+      alert(`❌ Error: ${error instanceof Error ? error.message : 'Delete failed'}`)
+    }
+  }
+
+  const handleInvite = async () => {
+    if (!inviteForm.email.trim()) { alert('Email is required'); return }
+    setInviting(true)
+    try {
+      const res = await fetch('/api/v1/users/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+        body: JSON.stringify(inviteForm)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Invite failed')
+      alert('✅ Invitation sent successfully!')
+      setInviteForm({ email: '', first_name: '', last_name: '', role: 'member' })
+      setShowInviteModal(false)
+      fetchUsers()
+    } catch (err) {
+      alert(`❌ ${err instanceof Error ? err.message : 'Invite failed'}`)
+    } finally {
+      setInviting(false)
+    }
+  }
+
+  const handleToggleStatus = async (user: any) => {
+    const endpoint = user.status === 'active' ? 'deactivate' : 'activate'
+    const res = await fetch(`/api/v1/users/${user.id}/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+    })
+    if (res.ok) fetchUsers()
+  }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -101,7 +172,7 @@ const Users = () => {
 
     try {
       // Send to backend API
-      const response = await fetch('http://localhost:3000/api/v1/users', {
+      const response = await fetch('/api/v1/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -192,20 +263,23 @@ const Users = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('users.title')}</h1>
           <p className="text-gray-600">{t('users.subtitle')}</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary"
-        >
-          <span>+</span> New User
-        </button>
+        {canCreate.users && (
+          <div className="flex gap-2">
+            <button onClick={() => setShowInviteModal(true)} className="btn btn-outline">
+              ✉ Invite by Email
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="btn btn-primary"
+            >
+              <span>+</span> New User
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading users...</p>
-        </div>
-      )}
+      {loading && <BLoader />}
 
       {/* Empty State */}
       {!loading && users.length === 0 && (
@@ -228,6 +302,7 @@ const Users = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -241,9 +316,11 @@ const Users = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                        'bg-green-100 text-green-800'
+                        user.role === 'admin'     ? 'bg-red-100 text-red-800' :
+                        user.role === 'manager'   ? 'bg-blue-100 text-blue-800' :
+                        user.role === 'member'    ? 'bg-green-100 text-green-800' :
+                        user.role === 'developer' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-700'
                       }`}>
                         {user.role}
                       </span>
@@ -261,10 +338,87 @@ const Users = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.joined_date ? new Date(user.joined_date).toLocaleDateString() : 'N/A'}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {canEdit.users && (
+                          <button title="Edit" onClick={() => handleEditUser(user)} className="p-1.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          </button>
+                        )}
+                        {canEdit.users && (
+                          <button
+                            title={user.status === 'active' ? 'Deactivate' : 'Activate'}
+                            onClick={() => handleToggleStatus(user)}
+                            className={`p-1.5 rounded transition-colors ${user.status === 'active' ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
+                          >
+                            {user.status === 'active' ? (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            )}
+                          </button>
+                        )}
+                        {canDelete.users && (
+                          <button title="Delete" onClick={() => handleDeleteUser(user.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <div className="modal-backdrop" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Edit User</h2>
+              <button className="text-gray-400 hover:text-gray-600 text-2xl" onClick={() => setShowEditModal(false)}>×</button>
+            </div>
+            <div className="modal-body space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">First Name</label>
+                  <input type="text" value={editUserData.first_name} onChange={e => setEditUserData(prev => ({ ...prev, first_name: e.target.value }))} className="form-input" />
+                </div>
+                <div>
+                  <label className="form-label">Last Name</label>
+                  <input type="text" value={editUserData.last_name} onChange={e => setEditUserData(prev => ({ ...prev, last_name: e.target.value }))} className="form-input" />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">Email</label>
+                <input type="email" value={editUserData.email} onChange={e => setEditUserData(prev => ({ ...prev, email: e.target.value }))} className="form-input" />
+              </div>
+              <div>
+                <label className="form-label">Role</label>
+                <select value={editUserData.role} onChange={e => setEditUserData(prev => ({ ...prev, role: e.target.value }))} className="form-select">
+                  <option value="admin">Admin</option>
+                  <option value="manager">Manager</option>
+                  <option value="member">Member</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Phone</label>
+                  <input type="text" value={editUserData.phone} onChange={e => setEditUserData(prev => ({ ...prev, phone: e.target.value }))} className="form-input" />
+                </div>
+                <div>
+                  <label className="form-label">Location</label>
+                  <input type="text" value={editUserData.location} onChange={e => setEditUserData(prev => ({ ...prev, location: e.target.value }))} className="form-input" />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowEditModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleUpdateUser}>Save Changes</button>
+            </div>
           </div>
         </div>
       )}
@@ -670,6 +824,58 @@ const Users = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="modal-backdrop" onClick={() => setShowInviteModal(false)}>
+          <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Invite Team Member</h2>
+              <button className="text-gray-400 hover:text-gray-600 text-2xl" onClick={() => setShowInviteModal(false)}>×</button>
+            </div>
+            <div className="modal-body space-y-4">
+              <div>
+                <label className="form-label">Email *</label>
+                <input className="form-input" type="email" placeholder="user@example.com"
+                  value={inviteForm.email}
+                  onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label">First Name</label>
+                  <input className="form-input" placeholder="First"
+                    value={inviteForm.first_name}
+                    onChange={e => setInviteForm(f => ({ ...f, first_name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="form-label">Last Name</label>
+                  <input className="form-input" placeholder="Last"
+                    value={inviteForm.last_name}
+                    onChange={e => setInviteForm(f => ({ ...f, last_name: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">Role</label>
+                <select className="form-select" value={inviteForm.role}
+                  onChange={e => setInviteForm(f => ({ ...f, role: e.target.value }))}>
+                  <option value="member">Member</option>
+                  <option value="developer">Developer</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+              </div>
+              <p className="text-xs text-gray-400">An email with login credentials will be sent to the invited user.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowInviteModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleInvite} disabled={inviting}>
+                {inviting ? 'Sending...' : 'Send Invitation'}
+              </button>
             </div>
           </div>
         </div>

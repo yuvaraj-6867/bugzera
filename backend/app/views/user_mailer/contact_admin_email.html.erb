@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f1f5f9;
+      min-height: 100vh;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: white;
+      text-align: center;
+      padding: 36px 20px;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff7733 0%, #ff3355 55%, #cc33ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .header-subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      margin: 0;
+    }
+    .content {
+      padding: 36px 30px;
+    }
+    .intro {
+      font-size: 15px;
+      color: #374151;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .info-row {
+      display: flex;
+      padding: 10px 0;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #374151;
+      width: 100px;
+      flex-shrink: 0;
+    }
+    .info-value {
+      color: #6b7280;
+      flex: 1;
+    }
+    .message-box {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .message-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #92400e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+    .message-text {
+      font-size: 15px;
+      color: #374151;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .action-note {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.6;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .footer {
+      background: #f9fafb;
+      padding: 24px 30px;
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer-text {
+      font-size: 13px;
+      color: #9ca3af;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <div class="logo">BugZera</div>
+      <p class="header-subtitle">New Access Request</p>
+    </div>
+
+    <div class="content">
+      <div class="intro">
+        Someone has submitted an access request through the BugZera login page. Here are the details:
+      </div>
+
+      <div class="info-box">
+        <div class="info-row">
+          <span class="info-label">Name</span>
+          <span class="info-value"><%= @sender_name %></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Email</span>
+          <span class="info-value"><%= @sender_email %></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Sent on</span>
+          <span class="info-value"><%= Time.current.strftime('%B %d, %Y at %I:%M %p UTC') %></span>
+        </div>
+      </div>
+
+      <div class="message-box">
+        <div class="message-label">Message</div>
+        <div class="message-text"><%= @message %></div>
+      </div>
+
+      <div class="action-note">
+        ✅ You can reply directly to this email to respond to <strong><%= @sender_name %></strong>, or invite them to BugZera from the <strong>Users</strong> section.
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-text">
+        This message was sent via the BugZera login page contact form.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

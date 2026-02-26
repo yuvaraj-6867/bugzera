@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
+import { usePermissions } from '../../hooks/usePermissions'
+import BLoader from '../../components/BLoader'
+
 
 const Sprints = ({ projectId }: { projectId?: string }) => {
   const { t } = useLanguage()
+  const { canCreate, canEdit, canDelete } = usePermissions()
   const [showModal, setShowModal] = useState(false)
   const [sprints, setSprints] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,8 +34,8 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
     try {
       setLoading(true)
       const url = projectId
-        ? `http://localhost:3000/api/v1/sprints?project_id=${projectId}`
-        : 'http://localhost:3000/api/v1/sprints'
+        ? `/api/v1/sprints?project_id=${projectId}`
+        : '/api/v1/sprints'
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -69,7 +73,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('http://localhost:3000/api/v1/sprints', {
+      const response = await fetch('/api/v1/sprints', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -126,7 +130,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
 
   const viewSprint = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/sprints/${id}`, {
+      const response = await fetch(`/api/v1/sprints/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -148,7 +152,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
 
   const handleEditSave = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/sprints/${selectedSprint.id}`, {
+      const response = await fetch(`/api/v1/sprints/${selectedSprint.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +183,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this sprint?')) return
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/sprints/${id}`, {
+      const response = await fetch(`/api/v1/sprints/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -203,22 +207,20 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
           <h1 className="text-4xl font-bold text-[#0F172A] mb-2">{t('sprints.title')}</h1>
           <p className="text-[#64748B]">{t('sprints.subtitle')}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          + New Sprint
-        </button>
+        {canCreate.sprints && (
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+            + New Sprint
+          </button>
+        )}
       </div>
 
       {/* Loading State */}
-      {loading && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">Loading sprints...</p>
-        </div>
-      )}
+      {loading && <BLoader />}
 
       {/* Empty State */}
       {!loading && sprints.length === 0 && (
         <div className="card text-center py-12">
-          <p className="text-gray-500">No sprints yet. Create your first sprint!</p>
+          <p className="text-gray-500">{canCreate.sprints ? 'No sprints yet. Create your first sprint!' : 'No sprints yet.'}</p>
         </div>
       )}
 
@@ -281,6 +283,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
                 <p className="text-xs text-gray-500 mt-1">Done</p>
               </div>
             </div>
+
           </div>
         )
       })}
@@ -302,7 +305,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
                       <p className="text-sm text-gray-500 mt-1"><T>{sprint.sprint_goal}</T></p>
                     )}
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     <span className={`badge ${
                       sprint.status === 'active' ? 'badge-success' :
                       sprint.status === 'completed' ? 'badge-info' :
@@ -343,11 +346,11 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">Start Date *</label>
-                    <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="form-input" required />
+                    <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="form-input" min={new Date().toISOString().split('T')[0]} required />
                   </div>
                   <div>
                     <label className="form-label">End Date *</label>
-                    <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="form-input" required />
+                    <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="form-input" min={formData.startDate || new Date().toISOString().split('T')[0]} required />
                   </div>
                 </div>
 
@@ -437,27 +440,33 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
             <div className="modal-header">
               <h2 className="modal-title"><T>{selectedSprint.name}</T></h2>
               <div className="flex items-center gap-2">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setEditMode(true)
-                    setEditFormData({
-                      name: selectedSprint.name,
-                      description: selectedSprint.description,
-                      start_date: selectedSprint.start_date,
-                      end_date: selectedSprint.end_date,
-                      status: selectedSprint.status
-                    })
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn bg-red-600 text-white hover:bg-red-700"
-                  onClick={() => handleDelete(selectedSprint.id)}
-                >
-                  Delete
-                </button>
+                {canEdit.sprints && (
+                  <button
+                    title="Edit"
+                    className="p-1.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    onClick={() => {
+                      setEditMode(true)
+                      setEditFormData({
+                        name: selectedSprint.name,
+                        description: selectedSprint.description,
+                        start_date: selectedSprint.start_date,
+                        end_date: selectedSprint.end_date,
+                        status: selectedSprint.status
+                      })
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  </button>
+                )}
+                {canDelete.sprints && (
+                  <button
+                    title="Delete"
+                    className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    onClick={() => handleDelete(selectedSprint.id)}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                )}
                 <button onClick={() => { setSelectedSprint(null); setEditMode(false) }} className="text-2xl">&times;</button>
               </div>
             </div>
@@ -536,11 +545,11 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="form-label">Start Date *</label>
-                      <input type="date" name="start_date" value={editFormData.start_date || ''} onChange={handleEditChange} className="form-input" required />
+                      <input type="date" name="start_date" value={editFormData.start_date || ''} onChange={handleEditChange} className="form-input" min={new Date().toISOString().split('T')[0]} required />
                     </div>
                     <div>
                       <label className="form-label">End Date *</label>
-                      <input type="date" name="end_date" value={editFormData.end_date || ''} onChange={handleEditChange} className="form-input" required />
+                      <input type="date" name="end_date" value={editFormData.end_date || ''} onChange={handleEditChange} className="form-input" min={editFormData.start_date || new Date().toISOString().split('T')[0]} required />
                     </div>
                   </div>
                   <div>

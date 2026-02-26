@@ -14,6 +14,13 @@ class Api::V1::TicketsController < ApplicationController
     if params[:project_id].present?
       tickets = tickets.where(project_id: params[:project_id])
     end
+
+    # Full-text search
+    if params[:q].present?
+      q = "%#{params[:q]}%"
+      tickets = tickets.where('tickets.title LIKE ? OR tickets.description LIKE ?', q, q)
+    end
+
     render json: {
       tickets: tickets.map { |ticket| {
         id: ticket.id,
@@ -173,6 +180,11 @@ class Api::V1::TicketsController < ApplicationController
       
       # Reload to get associations
       ticket.reload
+
+      # Send notifications
+      NotificationService.ticket_created(ticket, @current_user) rescue nil
+      WebhookService.deliver_event(ticket.project_id, 'ticket.created', { id: ticket.id, title: ticket.title, status: ticket.status }) rescue nil
+
       render json: {
         id: ticket.id,
         title: ticket.title,
@@ -202,8 +214,9 @@ class Api::V1::TicketsController < ApplicationController
       return
     end
     
-    old_status = ticket.status
-    
+    old_status          = ticket.status
+    old_assigned_user_id = ticket.assigned_user_id
+
     Rails.logger.info "Update params: #{params.inspect}"
     
     # Handle both direct params and nested ticket params
@@ -260,6 +273,17 @@ class Api::V1::TicketsController < ApplicationController
       ticket.update(attachments: all_attachments.to_json) if all_attachments.any?
       
       ticket.reload
+
+      # Send general update notification
+      NotificationService.ticket_updated(ticket, @current_user) rescue nil
+
+      # Send assignment notification if assignee changed
+      if ticket.assigned_user_id != old_assigned_user_id && ticket.assigned_user_id.present?
+        NotificationService.notify_ticket_assigned(ticket) rescue nil
+      end
+
+      WebhookService.deliver_event(ticket.project_id, 'ticket.updated', { id: ticket.id, title: ticket.title, status: ticket.status }) rescue nil
+
       render json: {
         id: ticket.id,
         title: ticket.title,
@@ -283,14 +307,48 @@ class Api::V1::TicketsController < ApplicationController
   def destroy
     ticket = Ticket.find(params[:id])
 
-    # Check if user has access to this ticket's project (skip if no current_user)
     if current_user && !current_user.admin? && !current_user.projects.include?(ticket.project)
       render json: { error: 'Access denied' }, status: :forbidden
       return
     end
-    
+
     ticket.destroy
     render json: { message: 'Ticket deleted successfully' }
+  end
+
+  # POST /api/v1/tickets/bulk_delete  { ids: [1,2,3] }
+  def bulk_delete
+    ids     = Array(params[:ids]).map(&:to_i)
+    tickets = Ticket.where(id: ids)
+
+    unless current_user&.admin?
+      accessible = current_user&.projects&.pluck(:id) || []
+      tickets    = tickets.where(project_id: accessible)
+    end
+
+    deleted = tickets.destroy_all.count
+    render json: { message: "#{deleted} ticket(s) deleted", deleted: deleted }
+  end
+
+  # POST /api/v1/tickets/bulk_update_status  { ids: [1,2], status: 'done' }
+  def bulk_update_status
+    ids    = Array(params[:ids]).map(&:to_i)
+    status = params[:status]
+
+    allowed_statuses = %w[open in_progress in_review qa_ready done]
+    unless allowed_statuses.include?(status)
+      render json: { error: "Invalid status. Allowed: #{allowed_statuses.join(', ')}" }, status: :unprocessable_entity
+      return
+    end
+
+    tickets = Ticket.where(id: ids)
+    unless current_user&.admin?
+      accessible = current_user&.projects&.pluck(:id) || []
+      tickets    = tickets.where(project_id: accessible)
+    end
+
+    updated = tickets.update_all(status: status, updated_at: Time.current)
+    render json: { message: "#{updated} ticket(s) updated to '#{status}'", updated: updated }
   end
 
   private

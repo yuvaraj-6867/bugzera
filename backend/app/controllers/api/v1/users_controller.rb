@@ -5,9 +5,9 @@ class Api::V1::UsersController < ApplicationController
     # Extract user ID from token (fake_token_1, fake_token_2, etc.)
     token = request.headers['Authorization']&.gsub('Bearer ', '')
     user_id = token&.match(/fake_token_(\d+)/)&.[](1)
-    
+
     user = user_id ? User.find_by(id: user_id) : current_user
-    
+
     if user
       render json: {
         id: user.id,
@@ -16,13 +16,29 @@ class Api::V1::UsersController < ApplicationController
         email: user.email,
         role: user.role,
         phone: user.phone,
-        location: user.location
+        location: user.location,
+        avatar: user.avatar
       }
     else
       render json: { error: 'No users found' }, status: :not_found
     end
   rescue => e
     render json: { error: e.message }, status: :internal_server_error
+  end
+
+  def update_avatar
+    avatar_data = params[:avatar]
+
+    if avatar_data.present? && !avatar_data.start_with?('data:image/')
+      render json: { error: 'Invalid image format' }, status: :unprocessable_entity
+      return
+    end
+
+    if @current_user.update(avatar: avatar_data.presence)
+      render json: { avatar: @current_user.avatar, message: 'Profile photo updated' }
+    else
+      render json: { error: 'Failed to update avatar' }, status: :unprocessable_entity
+    end
   end
 
   def index
@@ -88,6 +104,86 @@ class Api::V1::UsersController < ApplicationController
     user = User.find(params[:id])
     user.destroy
     render json: { message: 'User deleted successfully' }
+  end
+
+  def deactivate
+    user = User.find(params[:id])
+    if user.update(status: 'inactive')
+      render json: { message: 'User deactivated', status: 'inactive' }
+    else
+      render json: { errors: user.errors }, status: :unprocessable_entity
+    end
+  end
+
+  def activate
+    user = User.find(params[:id])
+    if user.update(status: 'active')
+      render json: { message: 'User activated', status: 'active' }
+    else
+      render json: { errors: user.errors }, status: :unprocessable_entity
+    end
+  end
+
+  def invite
+    email = params[:email].to_s.strip.downcase
+    role  = params[:role].presence || 'member'
+
+    if email.blank?
+      render json: { error: 'Email is required' }, status: :unprocessable_entity
+      return
+    end
+
+    if User.exists?(email: email)
+      render json: { error: 'User with this email already exists' }, status: :unprocessable_entity
+      return
+    end
+
+    first_name = params[:first_name].presence || 'Invited'
+    last_name  = params[:last_name].presence  || 'User'
+    generated_password = generate_password
+
+    user = User.new(
+      first_name: first_name,
+      last_name: last_name,
+      email: email,
+      password: generated_password,
+      role: role,
+      status: 'active',
+      joined_date: Date.current
+    )
+
+    if user.save
+      UserMailer.welcome_email(user, generated_password).deliver_now rescue nil
+      render json: { message: 'Invitation sent', user: { id: user.id, email: user.email, role: user.role } }, status: :created
+    else
+      render json: { errors: user.errors }, status: :unprocessable_entity
+    end
+  end
+
+  def activity
+    user = User.find(params[:id])
+    activities = Activity.where(user_id: user.id).order(created_at: :desc).limit(50) rescue []
+    render json: { activities: activities }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'User not found' }, status: :not_found
+  end
+
+  def password
+    user = User.find(params[:id])
+    new_password = params[:password] || params[:new_password]
+
+    if new_password.blank? || new_password.length < 6
+      render json: { error: 'Password must be at least 6 characters' }, status: :unprocessable_entity
+      return
+    end
+
+    if user.update(password: new_password)
+      render json: { message: 'Password updated successfully' }
+    else
+      render json: { errors: user.errors }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'User not found' }, status: :not_found
   end
 
   private

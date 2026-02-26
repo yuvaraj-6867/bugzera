@@ -46,6 +46,16 @@ class ApplicationController < ActionController::API
     current_user.can_access?(feature)
   end
 
+  # Pagination helper: returns { page, per_page, total, pages } and scoped relation
+  def paginate(scope)
+    page     = [params.fetch(:page, 1).to_i, 1].max
+    per_page = [[params.fetch(:per_page, 25).to_i, 1].max, 200].min
+    total    = scope.count
+    pages    = (total.to_f / per_page).ceil
+    [scope.offset((page - 1) * per_page).limit(per_page),
+     { total: total, page: page, per_page: per_page, pages: pages }]
+  end
+
   private
 
   def controller_to_feature(controller)
@@ -65,6 +75,9 @@ class ApplicationController < ActionController::API
       'articles' => 'knowledge-base',
       'integrations' => 'integrations',
       'analytics' => 'analytics',
+      'activities' => 'dashboard',
+      'audit_logs' => 'settings',
+      'ticket_relationships' => 'tickets',
       'users' => 'users',
       'user_invitations' => 'users',
       'test_runs' => 'test-cases',

@@ -4,4 +4,5 @@ class TestDataSet < ApplicationRecord
 
   belongs_to :project, optional: true
   belongs_to :environment, optional: true
+  has_many :test_data_snapshots, dependent: :destroy
 end

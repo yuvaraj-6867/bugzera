@@ -7,6 +7,8 @@ class Document < ApplicationRecord
   belongs_to :folder, optional: true
   belongs_to :user
   belongs_to :project, optional: true
+  has_many :document_versions, dependent: :destroy
+  has_many :document_approvals, dependent: :destroy
 
   scope :by_folder, ->(folder_id) { where(folder_id: folder_id) }
   scope :by_tags, ->(tag_list) { where("tags LIKE ?", "%#{tag_list.join('%')}%") }

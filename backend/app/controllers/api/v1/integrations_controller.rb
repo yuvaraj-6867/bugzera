@@ -1,5 +1,5 @@
 class Api::V1::IntegrationsController < ApplicationController
-  before_action :set_integration, only: [:show, :update, :destroy]
+  before_action :set_integration, only: [:show, :update, :destroy, :health, :sync, :logs]
 
   def index
     @integrations = Integration.all
@@ -31,6 +31,30 @@ class Api::V1::IntegrationsController < ApplicationController
   def destroy
     @integration.destroy
     head :no_content
+  end
+
+  def health
+    render json: {
+      id: @integration.id,
+      name: @integration.name,
+      status: @integration.status,
+      last_synced_at: @integration.try(:last_synced_at),
+      health: @integration.status == 'active' ? 'healthy' : 'degraded'
+    }
+  end
+
+  def sync
+    if @integration.update(last_synced_at: Time.current) rescue @integration.touch
+      render json: { message: 'Sync triggered', last_synced_at: Time.current }
+    else
+      render json: { error: 'Sync failed' }, status: :unprocessable_entity
+    end
+  end
+
+  def logs
+    logs = IntegrationLog.where(integration_id: @integration.id)
+                         .order(created_at: :desc).limit(50) rescue []
+    render json: { logs: logs }
   end
 
   private

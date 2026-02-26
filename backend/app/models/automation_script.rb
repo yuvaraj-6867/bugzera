@@ -6,6 +6,7 @@ class AutomationScript < ApplicationRecord
   belongs_to :test_case, optional: true
   belongs_to :user, optional: true
   has_many :test_runs, dependent: :nullify
+  has_many :automation_executions, dependent: :destroy
   has_one_attached :script_file
 
   scope :active, -> { where(status: 'active') }

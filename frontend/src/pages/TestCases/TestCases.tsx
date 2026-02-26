@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
+import React, { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
+import { usePermissions } from '../../hooks/usePermissions'
+import BLoader from '../../components/BLoader'
 
 const TestCases = ({ projectId }: { projectId?: string }) => {
   const { t } = useLanguage()
+  const { canCreate, canEdit, canDelete } = usePermissions()
   const [showModal, setShowModal] = useState(false)
   const [testCases, setTestCases] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
@@ -11,6 +14,10 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
   const [selectedTestCase, setSelectedTestCase] = useState<any>(null)
   const [editMode, setEditMode] = useState(false)
   const [editFormData, setEditFormData] = useState<any>({})
+  const [tcComments, setTcComments] = useState<any[]>([])
+  const [loadingTcComments, setLoadingTcComments] = useState(false)
+  const [newTcComment, setNewTcComment] = useState('')
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -32,8 +39,8 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
     try {
       setLoading(true)
       const url = projectId
-        ? `http://localhost:3000/api/v1/test_cases?project_id=${projectId}`
-        : 'http://localhost:3000/api/v1/test_cases'
+        ? `/api/v1/test_cases?project_id=${projectId}`
+        : '/api/v1/test_cases'
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -56,7 +63,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/users', {
+      const response = await fetch('/api/v1/users', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -79,6 +86,30 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
     fetchUsers()
   }, [fetchTestCases, fetchUsers])
 
+  useEffect(() => {
+    if (!selectedTestCase?.id) { setTcComments([]); return }
+    setLoadingTcComments(true)
+    fetch(`/api/v1/test_cases/${selectedTestCase.id}/comments`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+    }).then(async res => {
+      if (res.ok) { const d = await res.json(); setTcComments(d.comments || []) }
+    }).finally(() => setLoadingTcComments(false))
+  }, [selectedTestCase?.id])
+
+  const handleAddTcComment = async () => {
+    if (!newTcComment.trim() || !selectedTestCase?.id) return
+    const res = await fetch(`/api/v1/test_cases/${selectedTestCase.id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+      body: JSON.stringify({ comment: { content: newTcComment } })
+    })
+    if (res.ok) {
+      const d = await res.json()
+      setTcComments(prev => [...prev, d.comment])
+      setNewTcComment('')
+    }
+  }
+
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -87,7 +118,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('http://localhost:3000/api/v1/test_cases', {
+      const response = await fetch('/api/v1/test_cases', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -148,7 +179,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
 
   const viewTestCase = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/test_cases/${id}`, {
+      const response = await fetch(`/api/v1/test_cases/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -172,7 +203,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
 
   const handleEditSave = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/test_cases/${selectedTestCase.id}`, {
+      const response = await fetch(`/api/v1/test_cases/${selectedTestCase.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -214,7 +245,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this test case?')) return
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/test_cases/${id}`, {
+      const response = await fetch(`/api/v1/test_cases/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -232,6 +263,43 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
     }
   }
 
+  const toggleSelect = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === testCases.length && testCases.length > 0) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(testCases.map(tc => tc.id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedIds.length} test case(s)? This cannot be undone.`)) return
+    try {
+      const res = await fetch('/api/v1/test_cases/bulk_delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+        body: JSON.stringify({ ids: selectedIds })
+      })
+      if (res.ok) { setSelectedIds([]); fetchTestCases() }
+    } catch (error) { console.error('Bulk delete failed:', error) }
+  }
+
+  const handleBulkUpdateStatus = async (status: string) => {
+    if (!status) return
+    try {
+      const res = await fetch('/api/v1/test_cases/bulk_update_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+        body: JSON.stringify({ ids: selectedIds, status })
+      })
+      if (res.ok) { setSelectedIds([]); fetchTestCases() }
+    } catch (error) { console.error('Bulk status update failed:', error) }
+  }
+
   return (
     <div>
       <div className="flex justify-between items-start mb-8">
@@ -246,20 +314,26 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
           </div>
           <p className="text-gray-600">{t('testCases.subtitle')}</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary"
-        >
-          <span>+</span> New Test Case
-        </button>
+        <div className="flex gap-2 items-center">
+          <a href="/api/v1/test_cases/export"
+            className="btn btn-outline text-sm"
+            target="_blank"
+            rel="noopener noreferrer">
+            ↓ Export CSV
+          </a>
+          {canCreate.testCases && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="btn btn-primary"
+            >
+              <span>+</span> New Test Case
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading test cases...</p>
-        </div>
-      )}
+      {loading && <BLoader />}
 
       {/* Empty State */}
       {!loading && testCases.length === 0 && (
@@ -270,7 +344,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
             </span>
           </div>
           <p className="text-gray-500 text-lg mb-2">No test cases yet</p>
-          <p className="text-gray-400 text-sm">Create your first test case to get started!</p>
+          {canCreate.testCases && <p className="text-gray-400 text-sm">Create your first test case to get started!</p>}
         </div>
       )}
 
@@ -282,6 +356,14 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={selectedIds.length === testCases.length && testCases.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Case #</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
@@ -292,7 +374,10 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {testCases.map((testCase) => (
-                  <tr key={testCase.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => viewTestCase(testCase.id)}>
+                  <tr key={testCase.id} className={`hover:bg-gray-50 cursor-pointer ${selectedIds.includes(testCase.id) ? 'bg-blue-50' : ''}`} onClick={() => viewTestCase(testCase.id)}>
+                    <td className="px-4 py-4 w-10" onClick={e => toggleSelect(testCase.id, e)}>
+                      <input type="checkbox" className="rounded" checked={selectedIds.includes(testCase.id)} onChange={() => {}} />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white">
@@ -337,6 +422,32 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50">
+          <span className="text-sm font-medium">{selectedIds.length} selected</span>
+          <div className="h-5 w-px bg-gray-600" />
+          <select
+            className="bg-gray-800 text-white text-sm rounded px-2 py-1 border border-gray-600"
+            defaultValue=""
+            onChange={e => { handleBulkUpdateStatus(e.target.value); (e.target as HTMLSelectElement).value = '' }}
+          >
+            <option value="" disabled>Change Status</option>
+            <option value="draft">Draft</option>
+            <option value="active">Active</option>
+            <option value="passed">Passed</option>
+            <option value="failed">Failed</option>
+            <option value="archived">Archived</option>
+          </select>
+          {canDelete.testCases && (
+            <button onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-3 py-1 rounded">
+              Delete Selected
+            </button>
+          )}
+          <button onClick={() => setSelectedIds([])} className="text-gray-400 hover:text-white text-sm ml-1">✕</button>
         </div>
       )}
 
@@ -484,38 +595,44 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                 <h2 className="modal-title"><T>{selectedTestCase.title}</T></h2>
               </div>
               <div className="flex items-center gap-2">
-                {!editMode && (
+                {!editMode && (canEdit.testCases || canDelete.testCases) && (
                   <>
-                    <button
-                      className="btn btn-outline text-sm"
-                      onClick={() => {
-                        setEditFormData({
-                          title: selectedTestCase.title || '',
-                          description: selectedTestCase.description || '',
-                          status: selectedTestCase.status || 'draft',
-                          priority: selectedTestCase.priority || 'medium',
-                          test_type: selectedTestCase.test_type || 'functional',
-                          preconditions: selectedTestCase.preconditions || '',
-                          test_steps: selectedTestCase.test_steps || '',
-                          expected_results: selectedTestCase.expected_results || '',
-                          test_data: selectedTestCase.test_data || '',
-                          post_conditions: selectedTestCase.post_conditions || '',
-                          assigned_user: selectedTestCase.assigned_user || '',
-                          automation_status: selectedTestCase.automation_status || 'not_automated',
-                          estimated_duration: selectedTestCase.estimated_duration || '',
-                          tags: selectedTestCase.tags || ''
-                        })
-                        setEditMode(true)
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn text-sm bg-red-600 text-white hover:bg-red-700"
-                      onClick={() => handleDelete(selectedTestCase.id)}
-                    >
-                      Delete
-                    </button>
+                    {canEdit.testCases && (
+                      <button
+                        title="Edit"
+                        className="p-1.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        onClick={() => {
+                          setEditFormData({
+                            title: selectedTestCase.title || '',
+                            description: selectedTestCase.description || '',
+                            status: selectedTestCase.status || 'draft',
+                            priority: selectedTestCase.priority || 'medium',
+                            test_type: selectedTestCase.test_type || 'functional',
+                            preconditions: selectedTestCase.preconditions || '',
+                            test_steps: selectedTestCase.test_steps || '',
+                            expected_results: selectedTestCase.expected_results || '',
+                            test_data: selectedTestCase.test_data || '',
+                            post_conditions: selectedTestCase.post_conditions || '',
+                            assigned_user: selectedTestCase.assigned_user || '',
+                            automation_status: selectedTestCase.automation_status || 'not_automated',
+                            estimated_duration: selectedTestCase.estimated_duration || '',
+                            tags: selectedTestCase.tags || ''
+                          })
+                          setEditMode(true)
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                      </button>
+                    )}
+                    {canDelete.testCases && (
+                      <button
+                        title="Delete"
+                        className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        onClick={() => handleDelete(selectedTestCase.id)}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    )}
                   </>
                 )}
                 <button
@@ -528,6 +645,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
             </div>
             <div className="modal-body">
               {!editMode ? (
+                <>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="form-label text-gray-500">Title</label>
@@ -594,6 +712,44 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                     <p className="text-sm text-gray-900">{selectedTestCase.updated_at ? new Date(selectedTestCase.updated_at).toLocaleString() : '-'}</p>
                   </div>
                 </div>
+
+                <div className="mt-6 border-t border-gray-100 pt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                    💬 Comments ({tcComments.length})
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                    {loadingTcComments ? (
+                      <p className="text-xs text-gray-400">Loading comments...</p>
+                    ) : tcComments.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">No comments yet.</p>
+                    ) : tcComments.map((c: any) => (
+                      <div key={c.id} className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded-full bg-accent-neon text-white text-xs flex items-center justify-center font-bold">
+                            {(c.author || 'U')[0].toUpperCase()}
+                          </div>
+                          <span className="text-xs font-medium text-gray-700">{c.author || 'Unknown'}</span>
+                          <span className="text-xs text-gray-400 ml-auto">{new Date(c.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 ml-8">{c.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTcComment}
+                      onChange={e => setNewTcComment(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && newTcComment.trim() && handleAddTcComment()}
+                      placeholder="Add a comment..."
+                      className="flex-1 form-input text-sm py-1.5"
+                    />
+                    <button onClick={handleAddTcComment} disabled={!newTcComment.trim()} className="btn btn-primary text-sm py-1.5 px-3 disabled:opacity-40">
+                      Post
+                    </button>
+                  </div>
+                </div>
+                </>
               ) : (
                 <div className="space-y-4">
                   <div>

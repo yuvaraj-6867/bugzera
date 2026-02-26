@@ -37,6 +37,9 @@ class Api::V1::TestRunsController < ApplicationController
     )
     
     if test_run.save
+      # Send notification
+      NotificationService.test_run_started(test_run, current_user) rescue nil
+
       # Start the test execution simulation in background thread
       Thread.new do
         TestExecutionSimulatorJob.new.perform(test_run.id)
@@ -49,37 +52,99 @@ class Api::V1::TestRunsController < ApplicationController
   
   def show
     test_run = TestRun.includes(:project).find(params[:id])
-    
-    # Set cache headers based on test run status
+
     if test_run.status.in?(['passed', 'failed'])
-      # Completed test runs can be cached for longer
       expires_in 5.minutes, public: true
     else
-      # Active test runs should not be cached
       expires_now
     end
-    
+
+    render json: test_run_json(test_run)
+  end
+
+  def update
+    test_run = TestRun.find(params[:id])
+    if test_run.update(test_run_params)
+      render json: test_run_json(test_run)
+    else
+      render json: { errors: test_run.errors }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test run not found' }, status: :not_found
+  end
+
+  def destroy
+    test_run = TestRun.find(params[:id])
+    test_run.destroy
+    head :no_content
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test run not found' }, status: :not_found
+  end
+
+  def rerun
+    original = TestRun.find(params[:id])
+    new_run = TestRun.new(
+      status: 'pending',
+      execution_time: 0,
+      user_id: current_user.id,
+      project_id: original.project_id,
+      notes: original.notes,
+      settings: original.settings
+    )
+
+    if new_run.save
+      Thread.new { TestExecutionSimulatorJob.new.perform(new_run.id) }
+      render json: { id: new_run.id, status: 'pending', message: 'Test run re-queued' }, status: :created
+    else
+      render json: { errors: new_run.errors }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test run not found' }, status: :not_found
+  end
+
+  def compare
+    ids = Array(params[:ids]).map(&:to_i).first(4)
+    test_runs = TestRun.includes(:project).where(id: ids)
     render json: {
-      id: test_run.id,
-      name: "Test Run ##{test_run.id}",
-      project: test_run.project&.name || 'BugZera',
-      status: test_run.status,
-      date: test_run.created_at.strftime('%Y-%m-%d %H:%M'),
-      duration: test_run.execution_time ? "#{test_run.execution_time}s" : 'N/A',
-      passRate: calculate_pass_rate(test_run),
-      current_step: test_run.current_step,
-      repository_url: test_run.repository_url,
-      branch: test_run.branch,
-      created_at: test_run.created_at,
-      execution_time: test_run.execution_time,
-      notes: test_run.notes
+      test_runs: test_runs.map { |tr| test_run_json(tr) }
     }
+  end
+
+  def artifacts
+    test_run = TestRun.find(params[:id])
+    render json: {
+      test_run_id: test_run.id,
+      screenshots_url: test_run.try(:screenshots_url),
+      video_url: test_run.try(:video_url),
+      execution_logs: test_run.try(:execution_logs),
+      performance_metrics: test_run.try(:performance_metrics)
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Test run not found' }, status: :not_found
   end
 
   private
 
+  def test_run_json(tr)
+    {
+      id: tr.id,
+      name: "Test Run ##{tr.id}",
+      project: tr.project&.name || 'BugZera',
+      status: tr.status || 'pending',
+      date: tr.created_at&.strftime('%Y-%m-%d %H:%M') || 'N/A',
+      duration: tr.execution_time ? "#{tr.execution_time}s" : 'N/A',
+      passRate: calculate_pass_rate(tr),
+      current_step: tr.current_step,
+      repository_url: tr.repository_url,
+      branch: tr.branch,
+      created_at: tr.created_at,
+      execution_time: tr.execution_time,
+      notes: tr.notes
+    }
+  end
+
   def test_run_params
-    params.require(:test_run).permit(:project_id, :notes, :settings)
+    params.require(:test_run).permit(:project_id, :notes, :settings, :status, :branch, :repository_url)
   end
 
   def calculate_pass_rate(test_run)

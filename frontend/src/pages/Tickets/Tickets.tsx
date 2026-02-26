@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent, type DragEvent } from 'react'
+import React, { useState, useEffect, useCallback, type FormEvent, type ChangeEvent, type DragEvent } from 'react'
 import * as XLSX from 'xlsx'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
+import { usePermissions } from '../../hooks/usePermissions'
+import BLoader from '../../components/BLoader'
 
 const statusColumns = [
   { id: 'todo', label: 'To Do', color: 'border-blue-400', bgColor: 'bg-blue-50', textColor: 'text-blue-700' },
@@ -13,6 +15,7 @@ const statusColumns = [
 
 const Tickets = ({ projectId }: { projectId?: string }) => {
   const { t } = useLanguage()
+  const { canCreate, canEdit, canDelete } = usePermissions()
   const [showModal, setShowModal] = useState(false)
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board')
   const [tickets, setTickets] = useState<any[]>([])
@@ -29,6 +32,13 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([])
   const [editAttachmentFiles, setEditAttachmentFiles] = useState<File[]>([])
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null)
+  const [ticketComments, setTicketComments] = useState<any[]>([])
+  const [loadingComments, setLoadingComments] = useState(false)
+  const [newComment, setNewComment] = useState('')
+  const [ticketTimeLogs, setTicketTimeLogs] = useState<any[]>([])
+  const [showTimeLogModal, setShowTimeLogModal] = useState(false)
+  const [timeLogEntry, setTimeLogEntry] = useState({ time_spent: '', description: '' })
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -53,8 +63,8 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
     try {
       setLoading(true)
       const url = projectId
-        ? `http://localhost:3000/api/v1/tickets?project_id=${projectId}`
-        : 'http://localhost:3000/api/v1/tickets'
+        ? `/api/v1/tickets?project_id=${projectId}`
+        : '/api/v1/tickets'
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -77,7 +87,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/users', {
+      const response = await fetch('/api/v1/users', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -98,8 +108,8 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
   const fetchSprints = useCallback(async () => {
     try {
       const url = projectId
-        ? `http://localhost:3000/api/v1/sprints?project_id=${projectId}`
-        : 'http://localhost:3000/api/v1/sprints'
+        ? `/api/v1/sprints?project_id=${projectId}`
+        : '/api/v1/sprints'
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -120,7 +130,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
 
   const fetchEnvironments = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/environments', {
+      const response = await fetch('/api/v1/environments', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -144,6 +154,48 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
     fetchSprints()
     fetchEnvironments()
   }, [fetchTickets, fetchUsers, fetchSprints, fetchEnvironments])
+
+  useEffect(() => {
+    if (!selectedTicket?.id) { setTicketComments([]); setTicketTimeLogs([]); return }
+    const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+    setLoadingComments(true)
+    Promise.all([
+      fetch(`/api/v1/tickets/${selectedTicket.id}/comments`, { headers }),
+      fetch(`/api/v1/tickets/${selectedTicket.id}/ticket_time_logs`, { headers })
+    ]).then(async ([cRes, tRes]) => {
+      if (cRes.ok) { const d = await cRes.json(); setTicketComments(d.comments || []) }
+      if (tRes.ok) { const d = await tRes.json(); setTicketTimeLogs(d.ticket_time_logs || []) }
+    }).finally(() => setLoadingComments(false))
+  }, [selectedTicket?.id])
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedTicket?.id) return
+    const res = await fetch(`/api/v1/tickets/${selectedTicket.id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+      body: JSON.stringify({ comment: { content: newComment } })
+    })
+    if (res.ok) {
+      const d = await res.json()
+      setTicketComments(prev => [...prev, d.comment])
+      setNewComment('')
+    }
+  }
+
+  const handleLogTime = async () => {
+    if (!timeLogEntry.time_spent || !selectedTicket?.id) return
+    const res = await fetch(`/api/v1/tickets/${selectedTicket.id}/ticket_time_logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+      body: JSON.stringify({ ticket_time_log: timeLogEntry })
+    })
+    if (res.ok) {
+      const d = await res.json()
+      setTicketTimeLogs(prev => [...prev, d.ticket_time_log])
+      setTimeLogEntry({ time_spent: '', description: '' })
+      setShowTimeLogModal(false)
+    }
+  }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -176,7 +228,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         fd.append('ticket[attachments][]', file)
       })
 
-      const response = await fetch('http://localhost:3000/api/v1/tickets', {
+      const response = await fetch('/api/v1/tickets', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -220,7 +272,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
 
   const updateTicketStatus = async (ticketId: number, newStatus: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/tickets/${ticketId}`, {
+      const response = await fetch(`/api/v1/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -267,7 +319,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
 
   const viewTicket = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/tickets/${id}`, {
+      const response = await fetch(`/api/v1/tickets/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -302,13 +354,13 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         editAttachmentFiles.forEach(file => {
           fd.append('attachments[]', file)
         })
-        response = await fetch(`http://localhost:3000/api/v1/tickets/${selectedTicket.id}`, {
+        response = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
           body: fd
         })
       } else {
-        response = await fetch(`http://localhost:3000/api/v1/tickets/${selectedTicket.id}`, {
+        response = await fetch(`/api/v1/tickets/${selectedTicket.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -339,7 +391,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this ticket?')) return
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/tickets/${id}`, {
+      const response = await fetch(`/api/v1/tickets/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -447,6 +499,43 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
     }
   }
 
+  const toggleSelect = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredTickets.length && filteredTickets.length > 0) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(filteredTickets.map(t => t.id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedIds.length} ticket(s)? This cannot be undone.`)) return
+    try {
+      const res = await fetch('/api/v1/tickets/bulk_delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+        body: JSON.stringify({ ids: selectedIds })
+      })
+      if (res.ok) { setSelectedIds([]); fetchTickets() }
+    } catch (error) { console.error('Bulk delete failed:', error) }
+  }
+
+  const handleBulkUpdateStatus = async (status: string) => {
+    if (!status) return
+    try {
+      const res = await fetch('/api/v1/tickets/bulk_update_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+        body: JSON.stringify({ ids: selectedIds, status })
+      })
+      if (res.ok) { setSelectedIds([]); fetchTickets() }
+    } catch (error) { console.error('Bulk status update failed:', error) }
+  }
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'low': return 'bg-green-100 text-green-800'
@@ -494,9 +583,11 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
               List
             </button>
           </div>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">
-            <span>+</span> New Ticket
-          </button>
+          {canCreate.tickets && (
+            <button onClick={() => setShowModal(true)} className="btn btn-primary">
+              <span>+</span> New Ticket
+            </button>
+          )}
         </div>
       </div>
 
@@ -543,11 +634,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
       </div>      
 
       {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading tickets...</p>
-        </div>
-      )}
+      {loading && <BLoader />}
 
       {/* Kanban Board View */}
       {!loading && viewMode === 'board' && (
@@ -627,6 +714,14 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={selectedIds.length === filteredTickets.length && filteredTickets.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
@@ -637,7 +732,10 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredTickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => viewTicket(ticket.id)}>
+                  <tr key={ticket.id} className={`hover:bg-gray-50 cursor-pointer ${selectedIds.includes(ticket.id) ? 'bg-blue-50' : ''}`} onClick={() => viewTicket(ticket.id)}>
+                    <td className="px-4 py-4 w-10" onClick={e => toggleSelect(ticket.id, e)}>
+                      <input type="checkbox" className="rounded" checked={selectedIds.includes(ticket.id)} onChange={() => {}} />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900"><T>{ticket.title}</T></div>
                       {ticket.description && (
@@ -670,6 +768,28 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && viewMode === 'list' && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50">
+          <span className="text-sm font-medium">{selectedIds.length} selected</span>
+          <div className="h-5 w-px bg-gray-600" />
+          <select
+            className="bg-gray-800 text-white text-sm rounded px-2 py-1 border border-gray-600"
+            defaultValue=""
+            onChange={e => { handleBulkUpdateStatus(e.target.value); (e.target as HTMLSelectElement).value = '' }}
+          >
+            <option value="" disabled>Change Status</option>
+            {statusColumns.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          {canDelete.tickets && (
+            <button onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-3 py-1 rounded">
+              Delete Selected
+            </button>
+          )}
+          <button onClick={() => setSelectedIds([])} className="text-gray-400 hover:text-white text-sm ml-1">✕</button>
         </div>
       )}
 
@@ -822,7 +942,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                   </div>
                   <div>
                     <label className="form-label">Due Date</label>
-                    <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className="form-input" />
+                    <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className="form-input" min={new Date().toISOString().split('T')[0]} />
                   </div>
                 </div>
 
@@ -900,7 +1020,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="p-8 text-center text-gray-500">Loading spreadsheet...</div>
+                  <BLoader />
                 )}
               </div>
             ) : (
@@ -921,30 +1041,36 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
             <div className="modal-header">
               <h2 className="modal-title">{editMode ? 'Edit Ticket' : 'Ticket Details'}</h2>
               <div className="flex items-center gap-2">
-                {!editMode && (
+                {!editMode && (canEdit.tickets || canDelete.tickets) && (
                   <>
-                    <button
-                      className="btn btn-outline text-sm"
-                      onClick={() => {
-                        setEditMode(true)
-                        setEditFormData({
-                          title: selectedTicket.title || '',
-                          description: selectedTicket.description || '',
-                          status: selectedTicket.status || 'todo',
-                          severity: selectedTicket.severity || 'medium',
-                          assigned_user: selectedTicket.assigned_user || '',
-                          sprint_id: selectedTicket.sprint_id || ''
-                        })
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn text-sm bg-red-600 text-white hover:bg-red-700"
-                      onClick={() => handleDelete(selectedTicket.id)}
-                    >
-                      Delete
-                    </button>
+                    {canEdit.tickets && (
+                      <button
+                        title="Edit"
+                        className="p-1.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        onClick={() => {
+                          setEditMode(true)
+                          setEditFormData({
+                            title: selectedTicket.title || '',
+                            description: selectedTicket.description || '',
+                            status: selectedTicket.status || 'todo',
+                            severity: selectedTicket.severity || 'medium',
+                            assigned_user: selectedTicket.assigned_user || '',
+                            sprint_id: selectedTicket.sprint_id || ''
+                          })
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                      </button>
+                    )}
+                    {canDelete.tickets && (
+                      <button
+                        title="Delete"
+                        className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        onClick={() => handleDelete(selectedTicket.id)}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    )}
                   </>
                 )}
                 <button className="text-gray-400 hover:text-gray-600 text-2xl" onClick={() => { setSelectedTicket(null); setEditMode(false) }}>×</button>
@@ -1062,6 +1188,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                   </div>
                 </div>
               ) : (
+                <>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Title</label>
@@ -1113,6 +1240,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                     <div className="col-span-2">
                       <label className="text-sm font-medium text-gray-500">Attachments</label>
                       <div className="mt-2 flex flex-wrap gap-3">
+
                         {selectedTicket.attachments.map((att: any, idx: number) => (
                           <div key={idx} className="cursor-pointer" onClick={() => openPreview(`http://localhost:3000${att.url}`, att.name)}>
                             {isImageFile(att.name) ? (
@@ -1144,8 +1272,112 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                     </div>
                   )}
                 </div>
+
+                <div className="mt-6 border-t border-gray-100 pt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                    💬 Comments ({ticketComments.length})
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                    {loadingComments ? (
+                      <p className="text-xs text-gray-400">Loading comments...</p>
+                    ) : ticketComments.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">No comments yet.</p>
+                    ) : ticketComments.map((c: any) => (
+                      <div key={c.id} className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded-full bg-accent-neon text-white text-xs flex items-center justify-center font-bold">
+                            {(c.author || 'U')[0].toUpperCase()}
+                          </div>
+                          <span className="text-xs font-medium text-gray-700">{c.author || 'Unknown'}</span>
+                          <span className="text-xs text-gray-400 ml-auto">{new Date(c.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 ml-8">{c.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={e => setNewComment(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && newComment.trim() && handleAddComment()}
+                      placeholder="Add a comment..."
+                      className="flex-1 form-input text-sm py-1.5"
+                    />
+                    <button onClick={handleAddComment} disabled={!newComment.trim()} className="btn btn-primary text-sm py-1.5 px-3 disabled:opacity-40">
+                      Post
+                    </button>
+                  </div>
+                </div>
+
+                {/* Time Log Section */}
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700">
+                      ⏱ Time Logs
+                      {ticketTimeLogs.length > 0 && (
+                        <span className="text-xs font-normal text-gray-500 ml-2">
+                          ({ticketTimeLogs.reduce((s: number, l: any) => s + parseFloat(l.time_spent || 0), 0).toFixed(1)}h total)
+                        </span>
+                      )}
+                    </h4>
+                    <button onClick={() => setShowTimeLogModal(true)} className="text-xs btn btn-outline py-1 px-2">
+                      + Log Time
+                    </button>
+                  </div>
+                  {ticketTimeLogs.length > 0 && (
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {ticketTimeLogs.map((log: any) => (
+                        <div key={log.id} className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">
+                          <span className="font-medium text-blue-600">{log.time_spent}h</span>
+                          <span className="flex-1 truncate">{log.description || 'No description'}</span>
+                          <span className="text-gray-400">{log.user_name || ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                </>
               )}
             </div>
+
+            {/* Time Log Modal */}
+            {showTimeLogModal && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-80">
+                  <h3 className="text-base font-semibold mb-4">Log Time</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="form-label">Hours Spent *</label>
+                      <input
+                        type="number"
+                        min="0.25"
+                        step="0.25"
+                        value={timeLogEntry.time_spent}
+                        onChange={e => setTimeLogEntry(prev => ({ ...prev, time_spent: e.target.value }))}
+                        className="form-input"
+                        placeholder="e.g. 1.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Description</label>
+                      <input
+                        type="text"
+                        value={timeLogEntry.description}
+                        onChange={e => setTimeLogEntry(prev => ({ ...prev, description: e.target.value }))}
+                        className="form-input"
+                        placeholder="What did you work on?"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={() => setShowTimeLogModal(false)} className="btn btn-outline">Cancel</button>
+                    <button onClick={handleLogTime} disabled={!timeLogEntry.time_spent} className="btn btn-primary disabled:opacity-40">Log</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {editMode && (
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setEditMode(false)}>Cancel</button>

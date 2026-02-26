@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { usePermissions } from '../../hooks/usePermissions'
+import BLoader from '../../components/BLoader'
 
 const Automation = () => {
   const { t } = useLanguage()
+  const { canDelete } = usePermissions()
   const [showModal, setShowModal] = useState(false)
   const [workflows, setWorkflows] = useState<any[]>([])
   const [testCases, setTestCases] = useState<any[]>([])
@@ -29,7 +32,7 @@ const Automation = () => {
   const fetchAutomationScripts = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3000/api/v1/automation_scripts', {
+      const response = await fetch('/api/v1/automation_scripts', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -51,7 +54,7 @@ const Automation = () => {
 
   const fetchTestCases = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/test_cases', {
+      const response = await fetch('/api/v1/test_cases', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -71,7 +74,7 @@ const Automation = () => {
 
   const fetchEnvironments = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/environments', {
+      const response = await fetch('/api/v1/environments', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -95,6 +98,20 @@ const Automation = () => {
     fetchEnvironments()
   }, [fetchAutomationScripts, fetchTestCases, fetchEnvironments])
 
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this automation workflow?')) return
+    try {
+      const res = await fetch(`/api/v1/automation_scripts/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+      })
+      if (!res.ok) throw new Error('Failed to delete workflow')
+      setWorkflows(prev => prev.filter(w => w.id !== id))
+    } catch (error) {
+      alert(`❌ Error: ${error instanceof Error ? error.message : 'Delete failed'}`)
+    }
+  }
+
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     if (type === 'checkbox') {
@@ -108,7 +125,7 @@ const Automation = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('http://localhost:3000/api/v1/automation_scripts', {
+      const response = await fetch('/api/v1/automation_scripts', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -169,11 +186,7 @@ const Automation = () => {
       </div>
 
       {/* Loading State */}
-      {loading && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">Loading automation workflows...</p>
-        </div>
-      )}
+      {loading && <BLoader />}
 
       {/* Empty State */}
       {!loading && workflows.length === 0 && (
@@ -195,6 +208,7 @@ const Automation = () => {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Test Case</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Created By</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -209,6 +223,13 @@ const Automation = () => {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{workflow.test_case || 'No Test Case'}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{workflow.created_by || 'Unknown'}</td>
+                    <td className="px-4 py-3 text-right">
+                      {canDelete.automation && (
+                        <button title="Delete" onClick={() => handleDelete(workflow.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

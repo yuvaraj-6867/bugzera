@@ -4,4 +4,5 @@ class Article < ApplicationRecord
 
   belongs_to :user, optional: true
   belongs_to :author, class_name: 'User', foreign_key: 'author_id', optional: true
+  has_many :article_feedbacks, dependent: :destroy
 end
