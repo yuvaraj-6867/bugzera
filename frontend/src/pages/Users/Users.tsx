@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const Users = () => {
   const { t } = useLanguage()
@@ -90,11 +92,11 @@ const Users = () => {
       body: JSON.stringify({ user: editUserData })
     })
     if (res.ok) { setShowEditModal(false); fetchUsers() }
-    else { const e = await res.json(); alert(e.errors || 'Update failed') }
+    else { const e = await res.json(); toast.error(e.errors || 'Update failed') }
   }
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm('Delete this user?')) return
+    if (!await confirmDialog('Delete this user?', 'Delete User')) return
     try {
       const res = await fetch(`/api/v1/users/${id}`, {
         method: 'DELETE',
@@ -103,12 +105,12 @@ const Users = () => {
       if (!res.ok) throw new Error('Failed to delete user')
       setUsers(prev => prev.filter(u => u.id !== id))
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Delete failed'}`)
+      toast.error(error instanceof Error ? error.message : 'Delete failed')
     }
   }
 
   const handleInvite = async () => {
-    if (!inviteForm.email.trim()) { alert('Email is required'); return }
+    if (!inviteForm.email.trim()) { toast.info('Email is required'); return }
     setInviting(true)
     try {
       const res = await fetch('/api/v1/users/invite', {
@@ -118,12 +120,12 @@ const Users = () => {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Invite failed')
-      alert('✅ Invitation sent successfully!')
+      toast.success('Invitation sent successfully!')
       setInviteForm({ email: '', first_name: '', last_name: '', role: 'member' })
       setShowInviteModal(false)
       fetchUsers()
     } catch (err) {
-      alert(`❌ ${err instanceof Error ? err.message : 'Invite failed'}`)
+      toast.error(err instanceof Error ? err.message : 'Invite failed')
     } finally {
       setInviting(false)
     }
@@ -212,7 +214,7 @@ const Users = () => {
       const data = await response.json()
       console.log('User created:', data)
 
-      alert('✅ User created successfully and saved to database!')
+      toast.success('User created successfully and saved to database!')
 
       // Reset form
       setFormData({
@@ -252,7 +254,7 @@ const Users = () => {
       fetchUsers()
     } catch (error) {
       console.error('Error creating user:', error)
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to create user'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to create user')
     }
   }
 

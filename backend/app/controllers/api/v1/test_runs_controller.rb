@@ -39,6 +39,7 @@ class Api::V1::TestRunsController < ApplicationController
     if test_run.save
       # Send notification
       NotificationService.test_run_started(test_run, current_user) rescue nil
+      Activity.track(action: 'started', owner: current_user, trackable: test_run, project_id: test_run.project_id) rescue nil
 
       # Start the test execution simulation in background thread
       Thread.new do

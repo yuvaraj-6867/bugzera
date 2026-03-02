@@ -320,12 +320,21 @@ const ProfileSettings = ({ user }: { user: any }) => {
   )
 }
 
+// Map old Rails ActiveSupport timezone names to IANA names
+const RAILS_TO_IANA: Record<string, string> = {
+  'New Delhi': 'Asia/Kolkata', 'Kolkata': 'Asia/Kolkata', 'Chennai': 'Asia/Kolkata',
+  'Mumbai': 'Asia/Kolkata', 'Sri Jayawardenepura': 'Asia/Colombo',
+  'UTC': 'UTC', 'London': 'Europe/London', 'Eastern Time (US & Canada)': 'America/New_York',
+  'Pacific Time (US & Canada)': 'America/Los_Angeles', 'Central Time (US & Canada)': 'America/Chicago',
+}
+const normalizeTimezone = (tz: string) => RAILS_TO_IANA[tz] || tz
+
 const GeneralSettings = ({ settings, onSave, saving }: { settings: any, onSave: (p: any) => void, saving: boolean }) => {
   const { theme: currentTheme, setTheme: applyTheme } = useTheme()
   const { language: currentLanguage, setLanguage: applyLanguage, t, languageNames } = useLanguage()
   const [theme, setThemeLocal] = useState(currentTheme)
   const [language, setLanguageLocal] = useState(currentLanguage)
-  const [timezone, setTimezone] = useState(settings?.appearance?.timezone || 'UTC')
+  const [timezone, setTimezone] = useState(normalizeTimezone(settings?.appearance?.timezone || 'Asia/Kolkata'))
   const [compactView, setCompactView] = useState(settings?.appearance?.compact_view || false)
 
   const timezones = settings?.available_options?.timezones || []

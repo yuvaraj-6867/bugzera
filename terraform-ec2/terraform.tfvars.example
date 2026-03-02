@@ -1,0 +1,31 @@
+# ─── Copy this file and fill in your values ───────────────────────────────────
+# cp terraform.tfvars.example terraform.tfvars
+# ⚠  NEVER commit terraform.tfvars to git — it contains secrets
+
+aws_region    = "ap-south-1"
+app_name      = "bugzera"
+
+# ── Instance type ─────────────────────────────────────────────────────────────
+# t2.micro  → FREE for 12 months (AWS Free Tier) — 1 vCPU, 1 GB RAM
+# t3.micro  → ~$8.5/month after free tier
+# t3.small  → ~$15/month — more RAM, better for heavy traffic
+instance_type = "t2.micro"
+
+# ── SSH public key (paste contents of ~/.ssh/id_rsa.pub) ─────────────────────
+your_ssh_public_key = "ssh-rsa AAAA... your-email@example.com"
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+# Generate: ruby -e "require 'securerandom'; puts SecureRandom.hex(64)"
+secret_key_base      = "GENERATE_A_64_CHAR_HEX_STRING"
+google_client_id     = ""   # from Google Cloud Console (optional)
+google_client_secret = ""   # from Google Cloud Console (optional)
+
+# ── Domain (optional) ─────────────────────────────────────────────────────────
+# Leave blank to use Elastic IP directly (HTTP only)
+# Set your domain here if you have one (enables HTTPS instructions in output)
+domain_or_ip = ""   # e.g. "app.yourdomain.com"
+
+# ── Docker images (fill AFTER first terraform apply + ECR push) ───────────────
+# Run `terraform apply` once first — outputs will show the ECR URLs to use here
+backend_image  = ""   # e.g. "123456.dkr.ecr.ap-south-1.amazonaws.com/bugzera/backend:latest"
+frontend_image = ""   # e.g. "123456.dkr.ecr.ap-south-1.amazonaws.com/bugzera/frontend:latest"

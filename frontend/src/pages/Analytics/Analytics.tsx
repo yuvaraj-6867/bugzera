@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { downloadFile } from '../../utils/download'
+
 
 const hdrs = () => ({ 'Authorization': `Bearer ${localStorage.getItem('authToken')}` })
 
@@ -46,6 +48,7 @@ const Analytics = () => {
   const [byProject, setByProject]       = useState<any[]>([])
   const [ticketBreakdown, setTicketBreakdown] = useState<any>(null)
   const [velocity, setVelocity]         = useState<any[]>([])
+  const [reportForm, setReportForm]     = useState({ name: '', type: 'test_runs', period: '30', format: 'csv' })
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -349,39 +352,51 @@ const Analytics = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="form-label">Report Name</label>
-                <input type="text" className="form-input" placeholder="Enter report name" />
+                <input type="text" className="form-input" placeholder="Enter report name"
+                  value={reportForm.name}
+                  onChange={e => setReportForm(p => ({ ...p, name: e.target.value }))} />
               </div>
               <div>
                 <label className="form-label">Report Type</label>
-                <select className="form-select">
-                  <option>Test Execution Summary</option>
-                  <option>Bug Analysis</option>
-                  <option>Performance Metrics</option>
-                  <option>Team Productivity</option>
-                  <option>Sprint Velocity</option>
+                <select className="form-select" value={reportForm.type}
+                  onChange={e => setReportForm(p => ({ ...p, type: e.target.value }))}>
+                  <option value="test_runs">Test Execution Summary</option>
+                  <option value="tickets">Bug Analysis</option>
+                  <option value="test_cases">Team Productivity</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Time Period</label>
-                  <select className="form-select">
-                    <option>Last 7 days</option>
-                    <option>Last 30 days</option>
-                    <option>Last 90 days</option>
+                  <select className="form-select" value={reportForm.period}
+                    onChange={e => setReportForm(p => ({ ...p, period: e.target.value }))}>
+                    <option value="7">Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
                   </select>
                 </div>
                 <div>
                   <label className="form-label">Format</label>
-                  <select className="form-select">
-                    <option>PDF</option>
-                    <option>Excel</option>
-                    <option>CSV</option>
+                  <select className="form-select" value={reportForm.format}
+                    onChange={e => setReportForm(p => ({ ...p, format: e.target.value }))}>
+                    <option value="excel">Excel</option>
+                    <option value="csv">CSV</option>
                   </select>
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowModal(false)} className="flex-1 btn btn-secondary">Cancel</button>
-                <button className="flex-1 btn btn-primary">Generate</button>
+                <button
+                  className="flex-1 btn btn-primary"
+                  onClick={() => {
+                    const ext = reportForm.format === 'excel' ? 'xls' : 'csv'
+                    const filename = `${reportForm.name.trim() || `report_${reportForm.type}`}.${ext}`
+                    downloadFile(`/api/v1/analytics/export?type=${reportForm.type}&format=${reportForm.format}`, filename)
+                    setShowModal(false)
+                  }}
+                >
+                  Generate
+                </button>
               </div>
             </div>
           </div>

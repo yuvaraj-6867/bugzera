@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 interface TestCase {
   id: number
@@ -113,7 +115,7 @@ const TestPlans = () => {
       }
 
       const result = await response.json()
-      alert(`✅ Test Plan "${result.test_plan.name}" created successfully!`)
+      toast.success(`Test Plan "${result.test_plan.name}" created successfully!`)
       setFormData({
         name: '',
         description: '',
@@ -124,13 +126,13 @@ const TestPlans = () => {
       setShowModal(false)
       fetchTestPlans()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to create test plan'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to create test plan')
     }
   }
 
   const handleDeletePlan = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('Delete this test plan?')) return
+    if (!await confirmDialog('Delete this test plan?', 'Delete Test Plan')) return
     try {
       const res = await fetch(`/api/v1/test_plans/${id}`, {
         method: 'DELETE',
@@ -139,7 +141,7 @@ const TestPlans = () => {
       if (!res.ok) throw new Error('Failed to delete test plan')
       setTestPlans(prev => prev.filter(p => p.id !== id))
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Delete failed'}`)
+      toast.error(error instanceof Error ? error.message : 'Delete failed')
     }
   }
 
@@ -180,16 +182,16 @@ const TestPlans = () => {
       setSelectedTestPlan(data.test_plan)
       setShowAddTestCaseModal(false)
       fetchTestPlans()
-      alert('✅ Test case added to plan!')
+      toast.success('Test case added to plan!')
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to add test case'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to add test case')
     }
   }
 
   const removeTestCase = async (testCaseId: number) => {
     if (!selectedTestPlan) return
 
-    if (!confirm('Remove this test case from the plan?')) return
+    if (!await confirmDialog('Remove this test case from the plan?', 'Remove Test Case')) return
 
     try {
       const response = await fetch(
@@ -207,9 +209,9 @@ const TestPlans = () => {
       const data = await response.json()
       setSelectedTestPlan(data.test_plan)
       fetchTestPlans()
-      alert('✅ Test case removed from plan!')
+      toast.success('Test case removed from plan!')
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to remove test case'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to remove test case')
     }
   }
 

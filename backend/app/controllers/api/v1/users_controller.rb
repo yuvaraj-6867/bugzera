@@ -93,7 +93,10 @@ class Api::V1::UsersController < ApplicationController
 
   def update
     user = User.find(params[:id])
+    old_role = user.role
     if user.update(user_params)
+      action = user.role != old_role ? 'role_changed' : 'user_updated'
+      AuditLog.log(action: action, user: @current_user, resource: user, request: request, details: user.role != old_role ? "Role changed from #{old_role} to #{user.role}" : nil) rescue nil
       render json: { message: 'User updated successfully' }
     else
       render json: { errors: user.errors }, status: :unprocessable_content
@@ -102,6 +105,7 @@ class Api::V1::UsersController < ApplicationController
 
   def destroy
     user = User.find(params[:id])
+    AuditLog.log(action: 'user_deleted', user: @current_user, resource: user, request: request, details: "Deleted #{user.email}") rescue nil
     user.destroy
     render json: { message: 'User deleted successfully' }
   end
@@ -154,6 +158,7 @@ class Api::V1::UsersController < ApplicationController
 
     if user.save
       UserMailer.welcome_email(user, generated_password).deliver_now rescue nil
+      AuditLog.log(action: 'invitation_sent', user: @current_user, resource: user, request: request, details: "Invited #{email} as #{role}") rescue nil
       render json: { message: 'Invitation sent', user: { id: user.id, email: user.email, role: user.role } }, status: :created
     else
       render json: { errors: user.errors }, status: :unprocessable_entity

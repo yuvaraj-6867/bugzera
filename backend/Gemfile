@@ -29,7 +29,9 @@ gem "roo", "~> 2.10.0"
 gem "streamio-ffmpeg"
 gem "tzinfo-data"
 
-# Calendar integration
+# Google Calendar integration
+gem 'google-apis-calendar_v3', '~> 0.21'
+gem 'googleauth', '~> 1.8'
 
 
 group :development, :test do

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent } fr
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { confirmDialog } from '../../utils/confirm'
 
 const CATEGORIES = ['Getting Started', 'Best Practices', 'Integrations', 'Troubleshooting', 'API Reference', 'Tutorials', 'FAQ']
 
@@ -155,7 +156,7 @@ const KnowledgeBase = () => {
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this article? This cannot be undone.')) return
+    if (!await confirmDialog('Delete this article? This cannot be undone.', 'Delete Article')) return
     try {
       await fetch(`/api/v1/articles/${id}`, { method: 'DELETE', headers: hdrs() })
       setViewArticle(null)

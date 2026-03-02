@@ -1,0 +1,47 @@
+# ─── Copy this file → fill values → apply ────────────────────────────────────
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region  = "ap-south-1"
+environment = "production"
+app_name    = "bugzera"
+
+# ─── Networking ───────────────────────────────────────────────────────────────
+vpc_cidr             = "10.0.0.0/16"
+availability_zones   = ["ap-south-1a", "ap-south-1b"]
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
+
+# ─── ECS Task Sizes (cost-optimized) ──────────────────────────────────────────
+backend_cpu    = 512    # 0.5 vCPU  — Rails + Redis sidecar
+backend_memory = 1024   # 1 GB
+sidekiq_cpu    = 256    # 0.25 vCPU
+sidekiq_memory = 512
+frontend_cpu   = 256    # nginx is very light
+frontend_memory = 512
+
+backend_desired_count  = 1   # 1 instance (scale up via autoscaling if needed)
+frontend_desired_count = 1
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+db_instance_class    = "db.t3.micro"   # ~$15/month
+db_name              = "bugzera_production"
+db_username          = "bugzera"
+db_allocated_storage = 20
+
+# ─── App Config ───────────────────────────────────────────────────────────────
+rails_env    = "production"
+frontend_url = "https://app.bugzera.com"
+domain_name  = "bugzera.com"
+
+# ACM Certificate (create in ap-south-1 for ALB)
+# If no domain yet, leave empty and use HTTP only (remove HTTPS listener)
+certificate_arn = "arn:aws:acm:ap-south-1:YOUR_ACCOUNT_ID:certificate/xxxx-xxxx"
+
+# Google OAuth
+google_client_id     = "YOUR_GOOGLE_CLIENT_ID"
+google_client_secret = "YOUR_GOOGLE_CLIENT_SECRET"
+google_redirect_uri  = "https://app.bugzera.com/api/v1/google_calendar/callback"
+
+# ─── Docker images (fill after first ECR push) ────────────────────────────────
+backend_image  = ""   # "ACCOUNT.dkr.ecr.ap-south-1.amazonaws.com/bugzera/backend:latest"
+frontend_image = ""   # "ACCOUNT.dkr.ecr.ap-south-1.amazonaws.com/bugzera/frontend:latest"

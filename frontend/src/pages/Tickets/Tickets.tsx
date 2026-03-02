@@ -4,6 +4,8 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const statusColumns = [
   { id: 'todo', label: 'To Do', color: 'border-blue-400', bgColor: 'bg-blue-50', textColor: 'text-blue-700' },
@@ -39,6 +41,8 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
   const [showTimeLogModal, setShowTimeLogModal] = useState(false)
   const [timeLogEntry, setTimeLogEntry] = useState({ time_spent: '', description: '' })
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [availableLabels, setAvailableLabels] = useState<any[]>([])
+  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -148,12 +152,18 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
     }
   }, [])
 
+  const fetchLabels = useCallback(async () => {
+    const res = await fetch('/api/v1/labels', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } })
+    if (res.ok) { const d = await res.json(); setAvailableLabels(d.labels || []) }
+  }, [])
+
   useEffect(() => {
     fetchTickets()
     fetchUsers()
     fetchSprints()
     fetchEnvironments()
-  }, [fetchTickets, fetchUsers, fetchSprints, fetchEnvironments])
+    fetchLabels()
+  }, [fetchTickets, fetchUsers, fetchSprints, fetchEnvironments, fetchLabels])
 
   useEffect(() => {
     if (!selectedTicket?.id) { setTicketComments([]); setTicketTimeLogs([]); return }
@@ -224,6 +234,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
       if (formData.sprint) fd.append('ticket[sprint_id]', formData.sprint)
       fd.append('ticket[milestone]', formData.milestone)
       fd.append('ticket[project_id]', projectId || '')
+      selectedLabelIds.forEach(id => fd.append('ticket[label_ids][]', String(id)))
       attachmentFiles.forEach(file => {
         fd.append('ticket[attachments][]', file)
       })
@@ -241,7 +252,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         throw new Error(error.message || 'Failed to create ticket')
       }
 
-      alert('Ticket created successfully!')
+      toast.success('Ticket created successfully!')
       setFormData({
         title: '',
         description: '',
@@ -262,10 +273,11 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         milestone: ''
       })
       setAttachmentFiles([])
+      setSelectedLabelIds([])
       setShowModal(false)
       fetchTickets()
     } catch (error) {
-      alert(`Error: ${error instanceof Error ? error.message : 'Failed to create ticket'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to create ticket')
       console.error('Error creating ticket:', error)
     }
   }
@@ -389,7 +401,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this ticket?')) return
+    if (!await confirmDialog('Are you sure you want to delete this ticket?', 'Delete Ticket')) return
     try {
       const response = await fetch(`/api/v1/tickets/${id}`, {
         method: 'DELETE',
@@ -513,7 +525,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
   }
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Delete ${selectedIds.length} ticket(s)? This cannot be undone.`)) return
+    if (!await confirmDialog(`Delete ${selectedIds.length} ticket(s)? This cannot be undone.`, 'Bulk Delete')) return
     try {
       const res = await fetch('/api/v1/tickets/bulk_delete', {
         method: 'POST',
@@ -687,6 +699,11 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                             {ticket.ticket_type}
                           </span>
                         )}
+                        {ticket.labels?.map((l: any) => (
+                          <span key={l.id} className="px-1.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: l.color + '22', color: l.color }}>
+                            {l.name}
+                          </span>
+                        ))}
                       </div>
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <span>{ticket.assigned_user || 'Unassigned'}</span>
@@ -727,6 +744,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sprint</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Labels</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                 </tr>
               </thead>
@@ -759,6 +777,16 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {ticket.sprint_name || 'No Sprint'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {ticket.labels?.map((l: any) => (
+                          <span key={l.id} className="px-1.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: l.color + '22', color: l.color }}>
+                            {l.name}
+                          </span>
+                        ))}
+                        {(!ticket.labels || ticket.labels.length === 0) && <span className="text-gray-400">—</span>}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(ticket.created_at).toLocaleDateString()}
@@ -970,6 +998,34 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                   <label className="form-label">Milestone</label>
                   <input type="text" name="milestone" value={formData.milestone} onChange={handleChange} className="form-input" placeholder="v2.0.0" />
                 </div>
+
+                {/* Labels */}
+                {availableLabels.length > 0 && (
+                  <div>
+                    <label className="form-label">Labels</label>
+                    <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 min-h-[42px]">
+                      {availableLabels.map(label => {
+                        const selected = selectedLabelIds.includes(label.id)
+                        return (
+                          <button
+                            key={label.id}
+                            type="button"
+                            onClick={() => setSelectedLabelIds(prev => selected ? prev.filter(id => id !== label.id) : [...prev, label.id])}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border-2 transition-all ${selected ? 'border-current opacity-100 scale-105' : 'border-transparent opacity-60 hover:opacity-90'}`}
+                            style={{ backgroundColor: label.color + '22', color: label.color, borderColor: selected ? label.color : 'transparent' }}
+                          >
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
+                            {label.name}
+                            {selected && <span className="ml-0.5">✓</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {selectedLabelIds.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-1">{selectedLabelIds.length} label{selectedLabelIds.length > 1 ? 's' : ''} selected</p>
+                    )}
+                  </div>
+                )}
 
               </form>
             </div>

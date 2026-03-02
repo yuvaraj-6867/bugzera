@@ -12,6 +12,8 @@ import Automation from '../Automation/Automation'
 import TestData from '../TestData/TestData'
 import BLoader from '../../components/BLoader'
 import { usePermissions } from '../../hooks/usePermissions'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const hdrs = () => ({ 'Authorization': `Bearer ${localStorage.getItem('authToken')}` })
 
@@ -467,12 +469,12 @@ const ProjectDetails = () => {
       setShowModal(false)
       fetchProject()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Request failed'}`)
+      toast.error(error instanceof Error ? error.message : 'Request failed')
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm(`Delete project "${project.name}"? This cannot be undone.`)) return
+    if (!await confirmDialog(`Delete project "${project.name}"? This cannot be undone.`, 'Delete Project')) return
     try {
       const response = await fetch(`/api/v1/projects/${project.id}`, {
         method: 'DELETE', headers: hdrs()
@@ -480,7 +482,7 @@ const ProjectDetails = () => {
       if (!response.ok) throw new Error('Failed to delete project')
       navigate('/projects')
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to delete project'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete project')
     }
   }
 

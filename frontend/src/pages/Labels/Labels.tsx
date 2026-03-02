@@ -1,16 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const DEFAULT_COLORS = ['#6366F1', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316']
+
+const APPLIES_TO_OPTIONS = [
+  { value: '', label: 'All (Tickets & Test Cases)' },
+  { value: 'Ticket', label: 'Tickets only' },
+  { value: 'TestCase', label: 'Test Cases only' },
+]
 
 const Labels = () => {
   const { isAdminOrManager } = usePermissions()
   const [labels, setLabels] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingLabel, setEditingLabel] = useState<any>(null)
-  const [form, setForm] = useState({ name: '', color: '#6366F1', description: '' })
+  const [form, setForm] = useState({ name: '', color: '#6366F1', description: '', project_id: '', labelable_type: '' })
   const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
 
   const fetchLabels = useCallback(async () => {
@@ -20,17 +29,28 @@ const Labels = () => {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchLabels() }, [fetchLabels])
+  const fetchProjects = useCallback(async () => {
+    const res = await fetch('/api/v1/projects', { headers })
+    if (res.ok) { const d = await res.json(); setProjects(d.projects || []) }
+  }, [])
+
+  useEffect(() => { fetchLabels(); fetchProjects() }, [fetchLabels, fetchProjects])
 
   const openCreate = () => {
     setEditingLabel(null)
-    setForm({ name: '', color: '#6366F1', description: '' })
+    setForm({ name: '', color: '#6366F1', description: '', project_id: '', labelable_type: '' })
     setShowModal(true)
   }
 
   const openEdit = (label: any) => {
     setEditingLabel(label)
-    setForm({ name: label.name, color: label.color || '#6366F1', description: label.description || '' })
+    setForm({
+      name: label.name,
+      color: label.color || '#6366F1',
+      description: label.description || '',
+      project_id: label.project_id ? String(label.project_id) : '',
+      labelable_type: label.labelable_type || ''
+    })
     setShowModal(true)
   }
 
@@ -44,11 +64,11 @@ const Labels = () => {
       body: JSON.stringify({ label: form })
     })
     if (res.ok) { setShowModal(false); fetchLabels() }
-    else { const e = await res.json(); alert(JSON.stringify(e.errors || 'Failed')) }
+    else { const e = await res.json(); toast.error(JSON.stringify(e.errors || 'Failed')) }
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this label?')) return
+    if (!await confirmDialog('Delete this label?', 'Delete Label')) return
     await fetch(`/api/v1/labels/${id}`, { method: 'DELETE', headers })
     fetchLabels()
   }
@@ -81,6 +101,21 @@ const Labels = () => {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 dark:text-gray-100">{label.name}</p>
                 {label.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{label.description}</p>}
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {label.project_id && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                      {projects.find(p => p.id === label.project_id)?.name || `Project #${label.project_id}`}
+                    </span>
+                  )}
+                  {label.labelable_type && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                      {label.labelable_type === 'Ticket' ? 'Tickets' : 'Test Cases'}
+                    </span>
+                  )}
+                  {!label.project_id && !label.labelable_type && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Global</span>
+                  )}
+                </div>
               </div>
               {isAdminOrManager && (
                 <div className="flex gap-1 flex-shrink-0">
@@ -125,9 +160,33 @@ const Labels = () => {
                 <label className="form-label">Description</label>
                 <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="form-input" placeholder="Optional description" />
               </div>
+              <div>
+                <label className="form-label">Project</label>
+                <select value={form.project_id} onChange={e => setForm(p => ({ ...p, project_id: e.target.value }))} className="form-input">
+                  <option value="">Global (all projects)</option>
+                  {projects.map(pr => (
+                    <option key={pr.id} value={pr.id}>{pr.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Leave blank to make this label available across all projects.</p>
+              </div>
+              <div>
+                <label className="form-label">Applies To</label>
+                <select value={form.labelable_type} onChange={e => setForm(p => ({ ...p, labelable_type: e.target.value }))} className="form-input">
+                  {APPLIES_TO_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Restrict this label to a specific entity type.</p>
+              </div>
               <div className="flex items-center gap-3 mt-2">
                 <div className="w-8 h-8 rounded-lg" style={{ backgroundColor: form.color }} />
                 <span className="text-sm font-medium" style={{ color: form.color }}>{form.name || 'Preview'}</span>
+                {form.labelable_type && (
+                  <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
+                    {APPLIES_TO_OPTIONS.find(o => o.value === form.labelable_type)?.label}
+                  </span>
+                )}
               </div>
             </div>
             <div className="modal-footer">

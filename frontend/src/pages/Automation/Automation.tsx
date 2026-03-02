@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const Automation = () => {
   const { t } = useLanguage()
@@ -99,7 +101,7 @@ const Automation = () => {
   }, [fetchAutomationScripts, fetchTestCases, fetchEnvironments])
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this automation workflow?')) return
+    if (!await confirmDialog('Delete this automation workflow?', 'Delete Workflow')) return
     try {
       const res = await fetch(`/api/v1/automation_scripts/${id}`, {
         method: 'DELETE',
@@ -108,7 +110,7 @@ const Automation = () => {
       if (!res.ok) throw new Error('Failed to delete workflow')
       setWorkflows(prev => prev.filter(w => w.id !== id))
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Delete failed'}`)
+      toast.error(error instanceof Error ? error.message : 'Delete failed')
     }
   }
 
@@ -147,7 +149,7 @@ const Automation = () => {
         throw new Error(error.errors ? JSON.stringify(error.errors) : 'Failed to create automation script')
       }
 
-      alert('✅ Automation workflow created successfully and saved to database!')
+      toast.success('Automation workflow created successfully and saved to database!')
       setFormData({
         workflowName: '',
         description: '',
@@ -168,7 +170,7 @@ const Automation = () => {
       setShowModal(false)
       fetchAutomationScripts()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to create automation script'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to create automation script')
       console.error('Error creating automation script:', error)
     }
   }

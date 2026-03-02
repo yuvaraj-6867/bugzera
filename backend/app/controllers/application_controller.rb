@@ -7,9 +7,10 @@ class ApplicationController < ActionController::API
     return if request.method == 'OPTIONS'
     return if skip_authentication?
     
-    header = request.headers['Authorization']
-    header = header.split(' ').last if header
-    
+    # Accept token from Authorization header OR ?token= query param (for file downloads)
+    raw = request.headers['Authorization'] || (params[:token].present? ? "Bearer #{params[:token]}" : nil)
+    header = raw&.split(' ')&.last
+
     if header.blank?
       render json: { error: 'No authorization token provided' }, status: :unauthorized
       return

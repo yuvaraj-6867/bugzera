@@ -1,0 +1,63 @@
+# ─── Stage 1: Install gems ────────────────────────────────────────────────────
+FROM ruby:3.4.4-alpine AS gems
+
+RUN apk add --no-cache \
+    build-base \
+    postgresql-dev \
+    sqlite-dev \
+    tzdata \
+    git \
+    yaml-dev \
+    linux-headers \
+    libffi-dev \
+    gcompat \
+    imagemagick \
+    ffmpeg
+
+WORKDIR /app
+
+COPY Gemfile Gemfile.lock ./
+
+RUN bundle config set --local without 'development test' && \
+    bundle config set --local deployment 'true' && \
+    bundle install -j4 --retry 3
+
+# ─── Stage 2: Production image ────────────────────────────────────────────────
+FROM ruby:3.4.4-alpine
+
+RUN apk add --no-cache \
+    postgresql-dev \
+    sqlite-libs \
+    tzdata \
+    imagemagick \
+    ffmpeg \
+    curl \
+    gcompat
+
+ENV TZ=Asia/Kolkata \
+    RAILS_ENV=production \
+    RAILS_LOG_TO_STDOUT=true \
+    RAILS_SERVE_STATIC_FILES=true
+
+WORKDIR /app
+
+# Copy gems from build stage
+COPY --from=gems /usr/local/bundle /usr/local/bundle
+
+# Copy app source
+COPY . .
+
+# Create uploads directory
+RUN mkdir -p public/uploads && \
+    addgroup -S appgroup && \
+    adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
+
+USER appuser
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000/api/v1/health || exit 1
+
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0", "-p", "3000"]

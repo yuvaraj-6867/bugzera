@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
 
 
 const defaultForm = {
@@ -92,7 +93,7 @@ const Projects = () => {
       setShowModal(false)
       fetchProjects()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Request failed'}`)
+      toast.error(error instanceof Error ? error.message : 'Request failed')
     }
   }
 

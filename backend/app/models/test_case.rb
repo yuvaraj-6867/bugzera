@@ -13,6 +13,8 @@ class TestCase < ApplicationRecord
   has_many :test_case_attachments, dependent: :destroy
   has_many :test_plan_test_cases, dependent: :destroy
   has_many :test_plans, through: :test_plan_test_cases
+  has_many :test_case_labels, dependent: :destroy
+  has_many :labels, through: :test_case_labels
 
   scope :active, -> { where.not(status: 'archived') }
 

@@ -3,7 +3,7 @@ class Label < ApplicationRecord
   validates :color, presence: true, format: { with: /\A#[0-9A-Fa-f]{6}\z/ }
 
   belongs_to :project, optional: true
-  belongs_to :labelable, polymorphic: true
+  belongs_to :labelable, polymorphic: true, optional: true
 
   scope :by_name, -> { order(:name) }
   scope :for_tickets, -> { where(labelable_type: 'Ticket') }

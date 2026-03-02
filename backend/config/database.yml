@@ -12,8 +12,15 @@ test:
   database: db/test.sqlite3
 
 production:
-  <<: *default
-  database: <%= ENV['DATABASE_NAME'] || 'bugzera_production' %>
+  adapter: <%= ENV.fetch('DB_ADAPTER', 'sqlite3') %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+  # SQLite (EC2 single-server, default) — DB_ADAPTER not set
+  database: >-
+    <%= ENV.fetch('DB_ADAPTER', 'sqlite3') == 'postgresql' ?
+          ENV.fetch('DATABASE_NAME', 'bugzera_production') :
+          'db/production.sqlite3' %>
+  # PostgreSQL extras (used when DB_ADAPTER=postgresql)
   username: <%= ENV['DATABASE_USER'] %>
   password: <%= ENV['DATABASE_PASSWORD'] %>
   host: <%= ENV['DATABASE_HOST'] %>

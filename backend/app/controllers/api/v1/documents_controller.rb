@@ -66,6 +66,7 @@ class Api::V1::DocumentsController < ApplicationController
     )
 
     if @document.save
+      Activity.track(action: 'uploaded', owner: current_user, trackable: @document, project_id: @document.project_id) rescue nil
       render json: { document: document_json(@document) }, status: :created
     else
       File.delete(file_path) if File.exist?(file_path)

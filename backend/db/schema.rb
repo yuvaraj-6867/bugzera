@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_28_000024) do
+ActiveRecord::Schema[7.1].define(version: 2026_02_28_000100) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -369,6 +369,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_28_000024) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "project_id"
+    t.string "labelable_type"
+    t.integer "labelable_id"
+    t.index ["labelable_type", "labelable_id"], name: "index_labels_on_labelable_type_and_labelable_id"
+    t.index ["project_id"], name: "index_labels_on_project_id"
   end
 
   create_table "mentions", force: :cascade do |t|
@@ -545,6 +550,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_28_000024) do
     t.datetime "updated_at", null: false
     t.index ["test_case_id", "attachment_type"], name: "idx_on_test_case_id_attachment_type_a382b58a47"
     t.index ["test_case_id"], name: "index_test_case_attachments_on_test_case_id"
+  end
+
+  create_table "test_case_labels", force: :cascade do |t|
+    t.integer "test_case_id", null: false
+    t.integer "label_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["label_id"], name: "index_test_case_labels_on_label_id"
+    t.index ["test_case_id", "label_id"], name: "index_test_case_labels_on_test_case_id_and_label_id", unique: true
+    t.index ["test_case_id"], name: "index_test_case_labels_on_test_case_id"
   end
 
   create_table "test_cases", force: :cascade do |t|
@@ -862,6 +877,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_28_000024) do
     t.datetime "locked_at"
     t.string "api_key"
     t.datetime "api_key_last_used_at"
+    t.text "google_calendar_access_token"
+    t.text "google_calendar_refresh_token"
+    t.datetime "google_calendar_token_expiry"
+    t.datetime "google_calendar_connected_at"
+    t.string "google_calendar_email"
     t.index ["api_key"], name: "index_users_on_api_key", unique: true
     t.index ["email_verified"], name: "index_users_on_email_verified"
     t.index ["locked_at"], name: "index_users_on_locked_at"

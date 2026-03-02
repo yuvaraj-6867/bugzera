@@ -4,6 +4,8 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const APPROVAL_BADGE: Record<string, string> = {
   draft:       'bg-gray-100 text-gray-600',
@@ -81,7 +83,7 @@ const Documents = () => {
     e.preventDefault()
 
     if (!selectedFile) {
-      alert('Please select a file to upload')
+      toast.info('Please select a file to upload')
       return
     }
 
@@ -105,7 +107,7 @@ const Documents = () => {
         throw new Error(error.error || 'Failed to upload document')
       }
 
-      alert('✅ Document uploaded successfully!')
+      toast.success('Document uploaded successfully!')
       setFormData({
         title: '',
         description: '',
@@ -117,7 +119,7 @@ const Documents = () => {
       setShowModal(false)
       fetchDocuments()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to upload document'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to upload document')
       console.error('Error uploading document:', error)
     }
   }
@@ -144,7 +146,7 @@ const Documents = () => {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to download document'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to download document')
       console.error('Error downloading document:', error)
     }
   }
@@ -181,7 +183,7 @@ const Documents = () => {
   }
 
   const handleDelete = async (documentId: number, title: string) => {
-    if (!confirm(`Delete "${title}"?`)) return
+    if (!await confirmDialog(`Delete "${title}"?`, 'Delete Document')) return
     try {
       const response = await fetch(`/api/v1/documents/${documentId}`, {
         method: 'DELETE',
@@ -190,7 +192,7 @@ const Documents = () => {
       if (!response.ok) throw new Error('Failed to delete document')
       fetchDocuments()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to delete document'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete document')
     }
   }
 

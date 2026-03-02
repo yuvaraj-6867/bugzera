@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import BLoader from '../../components/BLoader'
+import { confirmDialog } from '../../utils/confirm'
 
 const hdrs = () => ({
   'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -181,7 +182,7 @@ const TestData = () => {
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this dataset? This cannot be undone.')) return
+    if (!await confirmDialog('Delete this dataset? This cannot be undone.', 'Delete Dataset')) return
     try {
       await fetch(`/api/v1/test_data_sets/${id}`, { method: 'DELETE', headers: hdrs() })
       setViewDataset(null)

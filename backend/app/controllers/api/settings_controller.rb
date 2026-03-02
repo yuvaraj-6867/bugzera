@@ -20,7 +20,10 @@ class Api::SettingsController < ApplicationController
           { code: 'de', name: 'Deutsch' },
           { code: 'ja', name: '日本語' }
         ],
-        timezones: ActiveSupport::TimeZone.all.map { |tz| { name: tz.name, offset: tz.formatted_offset } }
+        timezones: ActiveSupport::TimeZone.all
+                     .uniq { |tz| tz.tzinfo.name }
+                     .sort_by { |tz| [tz.utc_offset, tz.tzinfo.name] }
+                     .map { |tz| { name: tz.tzinfo.name, offset: tz.formatted_offset } }
       }
     }
   end

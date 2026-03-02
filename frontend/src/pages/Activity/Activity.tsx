@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import BLoader from '../../components/BLoader'
+import { downloadFile } from '../../utils/download'
 
 const Activity = () => {
   const { t } = useLanguage()
@@ -52,37 +53,12 @@ const Activity = () => {
         const items = data.activities || []
         setActivities(prev => append ? [...prev, ...items] : items)
         setMeta(data.meta || { total: items.length, pages: 1 })
-        return
       }
     } catch (err) {
-      console.error('Activities API error, falling back:', err)
+      console.error('Activities fetch error:', err)
+    } finally {
+      pageNum === 1 ? setLoading(false) : setLoadingMore(false)
     }
-
-    // Fallback: aggregate from existing endpoints (when activities table is empty)
-    const all: any[] = []
-    try {
-      const [tRes, tcRes, docsRes] = await Promise.all([
-        fetch('/api/v1/tickets', { headers }),
-        fetch('/api/v1/test_cases', { headers }),
-        fetch('/api/v1/documents', { headers }),
-      ])
-      if (tRes.ok) {
-        const { tickets = [] } = await tRes.json()
-        tickets.forEach((t: any) => all.push({ id: `ticket-${t.id}`, trackable_type: 'Ticket', action: t.updated_at !== t.created_at ? 'updated' : 'created', owner_name: t.created_by || 'Unknown', owner_initials: (t.created_by || '?')[0].toUpperCase(), trackable_name: t.title, created_at: t.updated_at || t.created_at }))
-      }
-      if (tcRes.ok) {
-        const { test_cases = [] } = await tcRes.json()
-        test_cases.forEach((tc: any) => all.push({ id: `tc-${tc.id}`, trackable_type: 'TestCase', action: tc.updated_at !== tc.created_at ? 'updated' : 'created', owner_name: tc.created_by || 'Unknown', owner_initials: (tc.created_by || '?')[0].toUpperCase(), trackable_name: tc.title, created_at: tc.updated_at || tc.created_at }))
-      }
-      if (docsRes.ok) {
-        const { documents = [] } = await docsRes.json()
-        documents.forEach((d: any) => all.push({ id: `doc-${d.id}`, trackable_type: 'Document', action: 'uploaded', owner_name: d.uploaded_by || 'Unknown', owner_initials: (d.uploaded_by || '?')[0].toUpperCase(), trackable_name: d.title, created_at: d.updated_at || d.created_at }))
-      }
-    } catch (_) {}
-    all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    setActivities(all)
-    setMeta({ total: all.length, pages: 1 })
-    setLoading(false)
   }, [filter])
 
   useEffect(() => {
@@ -107,11 +83,11 @@ const Activity = () => {
           <h1 className="text-4xl font-bold text-[#0F172A] dark:text-gray-100 mb-2">{t('activity.title')}</h1>
           <p className="text-[#64748B] dark:text-gray-400">{t('activity.subtitle')}</p>
         </div>
-        <a href="/api/v1/activities/export"
+        <button
           className="btn btn-outline text-sm"
-          target="_blank" rel="noopener noreferrer">
+          onClick={() => downloadFile('/api/v1/activities/export', 'activities.csv')}>
           ↓ Export CSV
-        </a>
+        </button>
       </div>
 
       {/* Filters */}

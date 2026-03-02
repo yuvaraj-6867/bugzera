@@ -26,6 +26,7 @@ import CalendarEvents from './pages/Calendar/Calendar'
 import Documents from './pages/Documents/Documents'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
+import ToastContainer from './components/ToastContainer'
 
 const queryClient = new QueryClient()
 
@@ -95,6 +96,7 @@ function App() {
       </Router>
     </QueryClientProvider>
     </LanguageProvider>
+    <ToastContainer />
     </ThemeProvider>
   )
 }

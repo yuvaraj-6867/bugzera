@@ -161,29 +161,57 @@ class Api::V1::AnalyticsController < ApplicationController
     case type
     when 'tickets'
       scope = (pid ? Ticket.where(project_id: pid) : Ticket.all)
-              .includes(:project, :assigned_user).order(created_at: :desc).limit(5000)
+              .includes(:project, :assigned_user, :created_by, :sprint)
+              .order(created_at: :desc).limit(5000)
       csv_str = CSV.generate(headers: true) do |csv|
-        csv << ['ID', 'Title', 'Status', 'Severity', 'Priority', 'Project', 'Assigned To', 'Created At']
+        csv << [
+          'ID', 'Ticket ID', 'Title', 'Type', 'Status', 'Priority', 'Severity', 'Resolution',
+          'Description', 'Steps to Reproduce', 'Expected Result', 'Actual Result',
+          'Environment', 'Browser', 'OS',
+          'Project', 'Sprint', 'Milestone',
+          'Assigned To', 'Created By',
+          'Estimate (h)', 'Time Spent (h)', 'Due Date', 'Resolved At', 'Created At'
+        ]
         scope.each do |t|
-          csv << [t.id, t.title, t.status, t.severity, t.priority,
-                  t.project&.name, t.assigned_user&.full_name,
-                  t.created_at&.strftime('%Y-%m-%d %H:%M')]
+          csv << [
+            t.id, t.ticket_id, t.title, t.ticket_type, t.status, t.priority, t.severity, t.resolution,
+            t.description, t.steps_to_reproduce, t.expected_result, t.actual_result,
+            t.environment, t.browser_version, t.os_details,
+            t.project&.name, t.sprint&.name, t.milestone,
+            t.assigned_user&.full_name, t.created_by&.full_name,
+            t.estimate, t.time_spent, t.due_date&.strftime('%Y-%m-%d'),
+            t.resolved_at&.strftime('%Y-%m-%d %H:%M'),
+            t.created_at&.strftime('%Y-%m-%d %H:%M')
+          ]
         end
       end
-      filename = 'tickets_export'
+      filename = "tickets_#{Date.today}"
 
     when 'test_cases'
       scope = (pid ? TestCase.where(project_id: pid) : TestCase.all)
-              .includes(:project, :assigned_user).order(created_at: :desc).limit(5000)
+              .includes(:project, :assigned_user, :created_by).order(created_at: :desc).limit(5000)
       csv_str = CSV.generate(headers: true) do |csv|
-        csv << ['ID', 'Title', 'Status', 'Priority', 'Test Type', 'Project', 'Assigned To', 'Created At']
+        csv << [
+          'ID', 'Test Case ID', 'Title', 'Status', 'Priority', 'Test Type', 'Automation Status',
+          'Description', 'Preconditions', 'Steps', 'Expected Results', 'Actual Results', 'Post Conditions',
+          'Pass Rate (%)', 'Execution Count', 'Coverage (%)', 'Flaky',
+          'Estimated Duration (min)', 'Version', 'Tags',
+          'Project', 'Assigned To', 'Created By',
+          'Last Executed At', 'Created At'
+        ]
         scope.each do |tc|
-          csv << [tc.id, tc.title, tc.status, tc.priority, tc.test_type,
-                  tc.project&.name, tc.assigned_user&.full_name,
-                  tc.created_at&.strftime('%Y-%m-%d %H:%M')]
+          csv << [
+            tc.id, tc.test_case_id, tc.title, tc.status, tc.priority, tc.test_type, tc.automation_status,
+            tc.description, tc.preconditions, tc.steps, tc.expected_results, tc.actual_results, tc.post_conditions,
+            tc.pass_rate, tc.execution_count, tc.coverage_percentage, tc.flaky_flag ? 'Yes' : 'No',
+            tc.estimated_duration, tc.version, tc.tags,
+            tc.project&.name, tc.assigned_user&.full_name, tc.created_by&.full_name,
+            tc.last_executed_at&.strftime('%Y-%m-%d %H:%M'),
+            tc.created_at&.strftime('%Y-%m-%d %H:%M')
+          ]
         end
       end
-      filename = 'test_cases_export'
+      filename = "test_cases_#{Date.today}"
 
     else # test_runs (default)
       scope = (pid ? TestRun.where(project_id: pid) : TestRun.all)

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const statusColor: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -35,7 +37,7 @@ const TestRuns = () => {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this test run?')) return
+    if (!await confirmDialog('Delete this test run?', 'Delete Test Run')) return
     try {
       const res = await fetch(`/api/v1/test_runs/${id}`, {
         method: 'DELETE',
@@ -45,7 +47,7 @@ const TestRuns = () => {
       setTestRuns(prev => prev.filter(r => r.id !== id))
       setSelectedIds(prev => prev.filter(x => x !== id))
     } catch (err) {
-      alert(`❌ Error: ${err instanceof Error ? err.message : 'Delete failed'}`)
+      toast.error(err instanceof Error ? err.message : 'Delete failed')
     }
   }
 
@@ -58,7 +60,7 @@ const TestRuns = () => {
       if (!res.ok) throw new Error('Failed to rerun')
       fetchAll()
     } catch (err) {
-      alert(`❌ Error: ${err instanceof Error ? err.message : 'Rerun failed'}`)
+      toast.error(err instanceof Error ? err.message : 'Rerun failed')
     }
   }
 
@@ -111,7 +113,7 @@ const TestRuns = () => {
       setShowModal(false)
       fetchAll()
     } catch (err) {
-      alert('Error: ' + (err instanceof Error ? err.message : 'Failed to start test run'))
+      toast.error(err instanceof Error ? err.message : 'Failed to start test run')
     } finally {
       setSubmitting(false)
     }

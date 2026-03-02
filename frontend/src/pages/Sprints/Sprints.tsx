@@ -3,6 +3,8 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 
 const Sprints = ({ projectId }: { projectId?: string }) => {
@@ -104,7 +106,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
         throw new Error(error.message || 'Failed to create sprint')
       }
 
-      alert('✅ Sprint created successfully and saved to database!')
+      toast.success('Sprint created successfully and saved to database!')
       setFormData({
         name: '',
         description: '',
@@ -123,7 +125,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
       setShowModal(false)
       fetchSprints()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to create sprint'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to create sprint')
       console.error('Error creating sprint:', error)
     }
   }
@@ -176,12 +178,12 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
       setSelectedSprint(null)
     } catch (error) {
       console.error('Error updating sprint:', error)
-      alert(`Error: ${error instanceof Error ? error.message : 'Failed to update sprint'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to update sprint')
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this sprint?')) return
+    if (!await confirmDialog('Are you sure you want to delete this sprint?', 'Delete Sprint')) return
     try {
       const response = await fetch(`/api/v1/sprints/${id}`, {
         method: 'DELETE',
@@ -196,7 +198,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
       setSelectedSprint(null)
     } catch (error) {
       console.error('Error deleting sprint:', error)
-      alert(`Error: ${error instanceof Error ? error.message : 'Failed to delete sprint'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete sprint')
     }
   }
 

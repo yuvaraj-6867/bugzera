@@ -2,7 +2,7 @@ class Api::V1::TicketsController < ApplicationController
   include ProjectAuthorization
 
   def index
-    tickets = Ticket.includes(:assigned_user, :created_by, :sprint)
+    tickets = Ticket.includes(:assigned_user, :created_by, :sprint, :labels)
 
     # Apply project access control only for non-admin users (skip if no current_user)
     if current_user && !current_user.admin?
@@ -34,6 +34,8 @@ class Api::V1::TicketsController < ApplicationController
         assigned_user: ticket.assigned_user ? "#{ticket.assigned_user.first_name} #{ticket.assigned_user.last_name}" : 'Unassigned',
         created_by: ticket.created_by ? "#{ticket.created_by.first_name} #{ticket.created_by.last_name}" : nil,
         attachments: ticket.attachments.present? ? JSON.parse(ticket.attachments) : [],
+        label_ids: ticket.label_ids,
+        labels: ticket.labels.map { |l| { id: l.id, name: l.name, color: l.color } },
         created_at: ticket.created_at,
         updated_at: ticket.updated_at
       }}
@@ -178,12 +180,19 @@ class Api::V1::TicketsController < ApplicationController
       # Store attachments as JSON in ticket (simplified approach)
       ticket.update(attachments: attachments_data.to_json) if attachments_data.any?
       
+      # Sync labels
+      if params.dig(:ticket, :label_ids).present?
+        label_ids = Array(params.dig(:ticket, :label_ids)).map(&:to_i).select(&:positive?)
+        ticket.label_ids = label_ids
+      end
+
       # Reload to get associations
       ticket.reload
 
       # Send notifications
       NotificationService.ticket_created(ticket, @current_user) rescue nil
       WebhookService.deliver_event(ticket.project_id, 'ticket.created', { id: ticket.id, title: ticket.title, status: ticket.status }) rescue nil
+      Activity.track(action: 'created', owner: @current_user, trackable: ticket, project_id: ticket.project_id) rescue nil
 
       render json: {
         id: ticket.id,
@@ -197,6 +206,8 @@ class Api::V1::TicketsController < ApplicationController
         assigned_user: ticket.assigned_user ? "#{ticket.assigned_user.first_name} #{ticket.assigned_user.last_name}" : 'Unassigned',
         created_by: ticket.created_by ? "#{ticket.created_by.first_name} #{ticket.created_by.last_name}" : nil,
         attachments: attachments_data,
+        label_ids: ticket.label_ids,
+        labels: ticket.labels.map { |l| { id: l.id, name: l.name, color: l.color } },
         created_at: ticket.created_at,
         updated_at: ticket.updated_at
       }, status: :created
@@ -271,7 +282,13 @@ class Api::V1::TicketsController < ApplicationController
       # Combine existing and new attachments
       all_attachments = existing_attachments + new_attachments
       ticket.update(attachments: all_attachments.to_json) if all_attachments.any?
-      
+
+      # Sync labels
+      if params.dig(:ticket, :label_ids).present? || params[:label_ids].present?
+        label_ids = Array(params.dig(:ticket, :label_ids) || params[:label_ids]).map(&:to_i).select(&:positive?)
+        ticket.label_ids = label_ids
+      end
+
       ticket.reload
 
       # Send general update notification
@@ -283,6 +300,7 @@ class Api::V1::TicketsController < ApplicationController
       end
 
       WebhookService.deliver_event(ticket.project_id, 'ticket.updated', { id: ticket.id, title: ticket.title, status: ticket.status }) rescue nil
+      Activity.track(action: 'updated', owner: @current_user, trackable: ticket, project_id: ticket.project_id) rescue nil
 
       render json: {
         id: ticket.id,
@@ -296,6 +314,8 @@ class Api::V1::TicketsController < ApplicationController
         assigned_user: ticket.assigned_user ? "#{ticket.assigned_user.first_name} #{ticket.assigned_user.last_name}" : 'Unassigned',
         created_by: ticket.created_by ? "#{ticket.created_by.first_name} #{ticket.created_by.last_name}" : nil,
         attachments: all_attachments,
+        label_ids: ticket.label_ids,
+        labels: ticket.labels.map { |l| { id: l.id, name: l.name, color: l.color } },
         created_at: ticket.created_at,
         updated_at: ticket.updated_at
       }
@@ -312,7 +332,9 @@ class Api::V1::TicketsController < ApplicationController
       return
     end
 
+    project_id = ticket.project_id
     ticket.destroy
+    Activity.track(action: 'deleted', owner: @current_user, project_id: project_id) rescue nil
     render json: { message: 'Ticket deleted successfully' }
   end
 

@@ -3,7 +3,7 @@ class Api::V1::SettingsController < ApplicationController
     settings = UserSetting.find_or_create_by(user: @current_user) do |s|
       s.theme = 'system'
       s.language = 'en'
-      s.timezone = 'UTC'
+      s.timezone = 'Asia/Kolkata'
     end
     render json: { settings: settings.as_json(except: [:created_at, :updated_at]) }
   end

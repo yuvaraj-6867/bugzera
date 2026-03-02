@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # ALB / ECS health check — no auth required
+  get '/api/v1/health', to: proc { [200, { 'Content-Type' => 'application/json' }, ['{"status":"ok"}']] }
+
   namespace :api do
     # Admin routes
     post 'admin/clear_all_data', to: 'admin#clear_all_data'
@@ -113,10 +116,20 @@ Rails.application.routes.draw do
       # ── Calendar ──────────────────────────────────────────────────────────────
       resources :calendar_events, only: [:index, :create, :show, :update, :destroy] do
         collection do
-          get  :upcoming
-          post :import
-          get  :export
+          get :upcoming
         end
+      end
+
+      # ── Google Calendar OAuth ──────────────────────────────────────────────────
+      scope :google_calendar do
+        get    'auth_url',    to: 'google_calendar#auth_url'
+        get    'callback',    to: 'google_calendar#callback'
+        get    'status',      to: 'google_calendar#status'
+        get    'events',      to: 'google_calendar#events'
+        post   'sync',        to: 'google_calendar#sync'
+        post   'push_event',   to: 'google_calendar#push_event'
+        delete 'delete_event', to: 'google_calendar#delete_event'
+        delete 'disconnect',   to: 'google_calendar#disconnect'
       end
 
       # ── Documents ─────────────────────────────────────────────────────────────

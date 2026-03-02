@@ -13,6 +13,8 @@ class Ticket < ApplicationRecord
   has_many :ticket_relationships, dependent: :destroy
   has_many :ticket_watchers, dependent: :destroy
   has_many :watchers, through: :ticket_watchers, source: :user
+  has_many :ticket_labels, dependent: :destroy
+  has_many :labels, through: :ticket_labels
 
   scope :open, -> { where(status: %w[todo in_progress in_review qa_ready]) }
   scope :closed, -> { where(status: 'done') }

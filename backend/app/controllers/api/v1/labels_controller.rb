@@ -40,7 +40,7 @@ class Api::V1::LabelsController < ApplicationController
   end
 
   def label_params
-    params.require(:label).permit(:name, :color, :description)
+    params.require(:label).permit(:name, :color, :description, :project_id, :labelable_type)
   end
 
   def label_json(label)
@@ -49,6 +49,8 @@ class Api::V1::LabelsController < ApplicationController
       name: label.name,
       color: label.color,
       description: label.description,
+      project_id: label.project_id,
+      labelable_type: label.labelable_type,
       created_at: label.created_at
     }
   end

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { confirmDialog } from '../../utils/confirm'
 
 const Integrations = () => {
   const { t } = useLanguage()
@@ -58,7 +59,7 @@ const Integrations = () => {
   }
 
   const handleDeleteWebhook = async (id: number) => {
-    if (!confirm('Delete this webhook?')) return
+    if (!await confirmDialog('Delete this webhook?', 'Delete Webhook')) return
     await fetch(`/api/v1/webhooks/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } })
     fetchWebhooks()
   }

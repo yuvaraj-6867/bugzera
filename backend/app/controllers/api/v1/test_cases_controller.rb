@@ -2,7 +2,7 @@ class Api::V1::TestCasesController < ApplicationController
   include ProjectAuthorization
 
   def index
-    test_cases = TestCase.includes(:assigned_user, :created_by, :project)
+    test_cases = TestCase.includes(:assigned_user, :created_by, :project, :labels)
 
     # Apply project access control only for non-admin users (skip if no current_user)
     if current_user && !current_user.admin?
@@ -33,6 +33,8 @@ class Api::V1::TestCasesController < ApplicationController
         project_name: tc.project&.name || 'No Project',
         assigned_user: tc.assigned_user ? "#{tc.assigned_user.first_name} #{tc.assigned_user.last_name}" : 'Unassigned',
         created_by: tc.created_by ? "#{tc.created_by.first_name} #{tc.created_by.last_name}" : nil,
+        label_ids: tc.label_ids,
+        labels: tc.labels.map { |l| { id: l.id, name: l.name, color: l.color } },
         created_at: tc.created_at,
         updated_at: tc.updated_at
       }}
@@ -108,7 +110,13 @@ class Api::V1::TestCasesController < ApplicationController
     ))
     
     if test_case.save
+      # Sync labels
+      if params.dig(:test_case, :label_ids).present?
+        label_ids = Array(params.dig(:test_case, :label_ids)).map(&:to_i).select(&:positive?)
+        test_case.label_ids = label_ids
+      end
       test_case.reload
+      Activity.track(action: 'created', owner: @current_user, trackable: test_case, project_id: test_case.project_id) rescue nil
       render json: test_case_json(test_case), status: :created
     else
       render json: { errors: test_case.errors }, status: :unprocessable_entity
@@ -156,8 +164,17 @@ class Api::V1::TestCasesController < ApplicationController
       elsif old_status != test_case.status && test_case.status == 'passed'
         SlackService.notify_test_success(test_case)
       end
-      
+
+      # Sync labels
+      if params.dig(:test_case, :label_ids).present?
+        label_ids = Array(params.dig(:test_case, :label_ids)).map(&:to_i).select(&:positive?)
+        test_case.label_ids = label_ids
+      elsif params.dig(:test_case, :label_ids) == []
+        test_case.label_ids = []
+      end
+
       test_case.reload
+      Activity.track(action: 'updated', owner: @current_user, trackable: test_case, project_id: test_case.project_id) rescue nil
       render json: test_case_json(test_case)
     else
       render json: { errors: test_case.errors }, status: :unprocessable_entity
@@ -173,7 +190,9 @@ class Api::V1::TestCasesController < ApplicationController
       return
     end
 
+    project_id = test_case.project_id
     test_case.destroy
+    Activity.track(action: 'deleted', owner: @current_user, project_id: project_id) rescue nil
     render json: { message: 'Test case deleted successfully' }
   end
 
@@ -229,15 +248,56 @@ class Api::V1::TestCasesController < ApplicationController
   end
 
   def export
-    test_cases = TestCase.all
-    test_cases = test_cases.where(project_id: params[:project_id]) if params[:project_id].present?
+    require 'csv'
+    scope = TestCase.includes(:assigned_user, :created_by, :project)
+    scope = scope.where(project_id: params[:project_id]) if params[:project_id].present?
 
-    csv_data = "id,title,status,priority,test_type,project\n"
-    test_cases.each do |tc|
-      csv_data += "#{tc.id},\"#{tc.title}\",#{tc.status},#{tc.priority},#{tc.test_type},\"#{tc.project&.name}\"\n"
+    csv_data = CSV.generate(headers: true) do |csv|
+      csv << [
+        'ID', 'Test Case ID', 'Title', 'Description', 'Preconditions',
+        'Steps', 'Expected Results', 'Actual Results', 'Post Conditions',
+        'Status', 'Priority', 'Test Type', 'Automation Status',
+        'Estimated Duration (min)', 'Execution Count', 'Pass Rate (%)',
+        'Coverage (%)', 'Flaky', 'Version', 'Tags', 'Test Data',
+        'Project', 'Assigned To', 'Created By',
+        'Last Executed At', 'Created At', 'Updated At'
+      ]
+      scope.find_each do |tc|
+        csv << [
+          tc.id,
+          tc.test_case_id,
+          tc.title,
+          tc.description,
+          tc.preconditions,
+          tc.steps,
+          tc.expected_results,
+          tc.actual_results,
+          tc.post_conditions,
+          tc.status,
+          tc.priority,
+          tc.test_type,
+          tc.automation_status,
+          tc.estimated_duration,
+          tc.execution_count,
+          tc.pass_rate,
+          tc.coverage_percentage,
+          tc.flaky_flag ? 'Yes' : 'No',
+          tc.version,
+          tc.tags,
+          tc.test_data,
+          tc.project&.name,
+          tc.assigned_user&.full_name,
+          tc.created_by&.full_name,
+          tc.last_executed_at&.strftime('%Y-%m-%d %H:%M'),
+          tc.created_at&.strftime('%Y-%m-%d %H:%M'),
+          tc.updated_at&.strftime('%Y-%m-%d %H:%M')
+        ]
+      end
     end
 
-    send_data csv_data, type: 'text/csv', disposition: 'attachment', filename: 'test_cases.csv'
+    send_data csv_data, type: 'text/csv; charset=utf-8',
+                        disposition: 'attachment',
+                        filename: "test_cases_#{Date.today}.csv"
   end
 
   def history
@@ -344,11 +404,13 @@ class Api::V1::TestCasesController < ApplicationController
   def test_case_json(test_case)
     {
       id: test_case.id,
+      test_case_id: test_case.test_case_id,
       title: test_case.title,
       description: test_case.description,
       preconditions: test_case.preconditions,
       test_steps: test_case.steps,
       expected_results: test_case.expected_results,
+      actual_results: test_case.actual_results,
       test_data: test_case.test_data,
       post_conditions: test_case.post_conditions,
       status: test_case.status,
@@ -356,12 +418,20 @@ class Api::V1::TestCasesController < ApplicationController
       test_type: test_case.test_type,
       automation_status: test_case.automation_status,
       estimated_duration: test_case.estimated_duration,
+      execution_count: test_case.execution_count,
+      pass_rate: test_case.pass_rate,
+      coverage_percentage: test_case.coverage_percentage,
+      flaky_flag: test_case.flaky_flag,
+      version: test_case.version,
       tags: test_case.tags,
       project_id: test_case.project_id,
       project_name: test_case.project&.name || 'No Project',
       assigned_user: test_case.assigned_user ? "#{test_case.assigned_user.first_name} #{test_case.assigned_user.last_name}" : 'Unassigned',
       assigned_user_id: test_case.assigned_user_id,
       created_by: test_case.created_by ? "#{test_case.created_by.first_name} #{test_case.created_by.last_name}" : nil,
+      last_executed_at: test_case.last_executed_at,
+      label_ids: test_case.label_ids,
+      labels: test_case.labels.map { |l| { id: l.id, name: l.name, color: l.color } },
       created_at: test_case.created_at,
       updated_at: test_case.updated_at
     }

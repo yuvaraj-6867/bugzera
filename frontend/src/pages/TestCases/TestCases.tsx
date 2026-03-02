@@ -3,6 +3,9 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { downloadFile } from '../../utils/download'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const TestCases = ({ projectId }: { projectId?: string }) => {
   const { t } = useLanguage()
@@ -18,6 +21,8 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
   const [loadingTcComments, setLoadingTcComments] = useState(false)
   const [newTcComment, setNewTcComment] = useState('')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [availableLabels, setAvailableLabels] = useState<any[]>([])
+  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -81,10 +86,16 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
     }
   }, [])
 
+  const fetchLabels = useCallback(async () => {
+    const res = await fetch('/api/v1/labels', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } })
+    if (res.ok) { const d = await res.json(); setAvailableLabels(d.labels || []) }
+  }, [])
+
   useEffect(() => {
     fetchTestCases()
     fetchUsers()
-  }, [fetchTestCases, fetchUsers])
+    fetchLabels()
+  }, [fetchTestCases, fetchUsers, fetchLabels])
 
   useEffect(() => {
     if (!selectedTestCase?.id) { setTcComments([]); return }
@@ -140,7 +151,8 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
             automation_status: formData.automationStatus,
             estimated_duration: formData.estimatedDuration ? parseInt(formData.estimatedDuration) : null,
             tags: formData.tags,
-            project_id: projectId || null
+            project_id: projectId || null,
+            label_ids: selectedLabelIds
           }
         })
       })
@@ -152,7 +164,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
 
       const result = await response.json()
       const testCaseNumber = result.test_case?.id ? `TC-${String(result.test_case.id).padStart(3, '0')}` : 'TC-XXX'
-      alert(`✅ Test case ${testCaseNumber} created successfully and saved to database!`)
+      toast.success(`Test case ${testCaseNumber} created successfully and saved to database!`)
       setFormData({
         title: '',
         description: '',
@@ -169,10 +181,11 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
         estimatedDuration: '',
         tags: ''
       })
+      setSelectedLabelIds([])
       setShowModal(false)
       fetchTestCases()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to create test case'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to create test case')
       console.error('Error creating test case:', error)
     }
   }
@@ -192,7 +205,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       setEditMode(false)
     } catch (error) {
       console.error('Error fetching test case:', error)
-      alert('Failed to load test case details')
+      toast.error('Failed to load test case details')
     }
   }
 
@@ -237,13 +250,13 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       setEditMode(false)
       fetchTestCases()
     } catch (error) {
-      alert(`Error: ${error instanceof Error ? error.message : 'Failed to update test case'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to update test case')
       console.error('Error updating test case:', error)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this test case?')) return
+    if (!await confirmDialog('Are you sure you want to delete this test case?', 'Delete Test Case')) return
     try {
       const response = await fetch(`/api/v1/test_cases/${id}`, {
         method: 'DELETE',
@@ -258,7 +271,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       setEditMode(false)
       fetchTestCases()
     } catch (error) {
-      alert(`Error: ${error instanceof Error ? error.message : 'Failed to delete test case'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete test case')
       console.error('Error deleting test case:', error)
     }
   }
@@ -277,7 +290,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
   }
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Delete ${selectedIds.length} test case(s)? This cannot be undone.`)) return
+    if (!await confirmDialog(`Delete ${selectedIds.length} test case(s)? This cannot be undone.`, 'Bulk Delete')) return
     try {
       const res = await fetch('/api/v1/test_cases/bulk_delete', {
         method: 'POST',
@@ -315,12 +328,11 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
           <p className="text-gray-600">{t('testCases.subtitle')}</p>
         </div>
         <div className="flex gap-2 items-center">
-          <a href="/api/v1/test_cases/export"
+          <button
             className="btn btn-outline text-sm"
-            target="_blank"
-            rel="noopener noreferrer">
+            onClick={() => downloadFile('/api/v1/test_cases/export', 'test_cases.csv')}>
             ↓ Export CSV
-          </a>
+          </button>
           {canCreate.testCases && (
             <button
               onClick={() => setShowModal(true)}
@@ -369,6 +381,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Labels</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                 </tr>
               </thead>
@@ -413,6 +426,16 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {testCase.assigned_user || 'Unassigned'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {testCase.labels?.map((l: any) => (
+                          <span key={l.id} className="px-1.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: l.color + '22', color: l.color }}>
+                            {l.name}
+                          </span>
+                        ))}
+                        {(!testCase.labels || testCase.labels.length === 0) && <span className="text-gray-400">—</span>}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(testCase.created_at).toLocaleDateString()}
@@ -574,6 +597,35 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                     <input type="text" name="tags" value={formData.tags} onChange={handleChange} className="form-input" placeholder="login, auth, critical" />
                   </div>
                 </div>
+
+                {/* Labels */}
+                {availableLabels.length > 0 && (
+                  <div>
+                    <label className="form-label">Labels</label>
+                    <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 min-h-[42px]">
+                      {availableLabels.map(label => {
+                        const selected = selectedLabelIds.includes(label.id)
+                        return (
+                          <button
+                            key={label.id}
+                            type="button"
+                            onClick={() => setSelectedLabelIds(prev => selected ? prev.filter(id => id !== label.id) : [...prev, label.id])}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border-2 transition-all ${selected ? 'border-current opacity-100 scale-105' : 'border-transparent opacity-60 hover:opacity-90'}`}
+                            style={{ backgroundColor: label.color + '22', color: label.color, borderColor: selected ? label.color : 'transparent' }}
+                          >
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: label.color }} />
+                            {label.name}
+                            {selected && <span className="ml-0.5">✓</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {selectedLabelIds.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-1">{selectedLabelIds.length} label{selectedLabelIds.length > 1 ? 's' : ''} selected</p>
+                    )}
+                  </div>
+                )}
+
               </form>
             </div>
             <div className="modal-footer">
@@ -647,17 +699,28 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
               {!editMode ? (
                 <>
                 <div className="grid grid-cols-2 gap-6">
+                  {/* Identity */}
                   <div>
-                    <label className="form-label text-gray-500">Title</label>
-                    <p className="text-sm text-gray-900"><T>{selectedTestCase.title || '-'}</T></p>
+                    <label className="form-label text-gray-500">Test Case ID</label>
+                    <p className="text-sm text-gray-900 font-mono">{selectedTestCase.test_case_id || `TC-${String(selectedTestCase.id).padStart(3,'0')}`}</p>
                   </div>
                   <div>
-                    <label className="form-label text-gray-500">Status</label>
-                    <p className="text-sm text-gray-900">{selectedTestCase.status || '-'}</p>
+                    <label className="form-label text-gray-500">Version</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.version || '1.0'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="form-label text-gray-500">Title</label>
+                    <p className="text-sm text-gray-900 font-medium"><T>{selectedTestCase.title || '-'}</T></p>
                   </div>
                   <div className="col-span-2">
                     <label className="form-label text-gray-500">Description</label>
                     <p className="text-sm text-gray-900 whitespace-pre-wrap"><T>{selectedTestCase.description || '-'}</T></p>
+                  </div>
+
+                  {/* Classification */}
+                  <div>
+                    <label className="form-label text-gray-500">Status</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.status || '-'}</p>
                   </div>
                   <div>
                     <label className="form-label text-gray-500">Priority</label>
@@ -667,6 +730,12 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                     <label className="form-label text-gray-500">Test Type</label>
                     <p className="text-sm text-gray-900">{selectedTestCase.test_type || '-'}</p>
                   </div>
+                  <div>
+                    <label className="form-label text-gray-500">Automation Status</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.automation_status || '-'}</p>
+                  </div>
+
+                  {/* Test Content */}
                   <div className="col-span-2">
                     <label className="form-label text-gray-500">Preconditions</label>
                     <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedTestCase.preconditions || '-'}</p>
@@ -680,6 +749,10 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                     <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedTestCase.expected_results || '-'}</p>
                   </div>
                   <div className="col-span-2">
+                    <label className="form-label text-gray-500">Actual Results</label>
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedTestCase.actual_results || '-'}</p>
+                  </div>
+                  <div className="col-span-2">
                     <label className="form-label text-gray-500">Test Data</label>
                     <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedTestCase.test_data || '-'}</p>
                   </div>
@@ -687,13 +760,33 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                     <label className="form-label text-gray-500">Post Conditions</label>
                     <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedTestCase.post_conditions || '-'}</p>
                   </div>
+
+                  {/* Execution Metrics */}
                   <div>
-                    <label className="form-label text-gray-500">Assigned User</label>
+                    <label className="form-label text-gray-500">Pass Rate</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.pass_rate != null ? `${selectedTestCase.pass_rate}%` : '-'}</p>
+                  </div>
+                  <div>
+                    <label className="form-label text-gray-500">Execution Count</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.execution_count ?? 0}</p>
+                  </div>
+                  <div>
+                    <label className="form-label text-gray-500">Coverage %</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.coverage_percentage != null ? `${selectedTestCase.coverage_percentage}%` : '-'}</p>
+                  </div>
+                  <div>
+                    <label className="form-label text-gray-500">Flaky</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.flaky_flag ? '⚠️ Yes' : 'No'}</p>
+                  </div>
+
+                  {/* People & Time */}
+                  <div>
+                    <label className="form-label text-gray-500">Assigned To</label>
                     <p className="text-sm text-gray-900">{selectedTestCase.assigned_user || 'Unassigned'}</p>
                   </div>
                   <div>
-                    <label className="form-label text-gray-500">Automation Status</label>
-                    <p className="text-sm text-gray-900">{selectedTestCase.automation_status || '-'}</p>
+                    <label className="form-label text-gray-500">Created By</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.created_by || '-'}</p>
                   </div>
                   <div>
                     <label className="form-label text-gray-500">Estimated Duration</label>
@@ -704,12 +797,12 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
                     <p className="text-sm text-gray-900">{selectedTestCase.tags || '-'}</p>
                   </div>
                   <div>
-                    <label className="form-label text-gray-500">Created At</label>
-                    <p className="text-sm text-gray-900">{selectedTestCase.created_at ? new Date(selectedTestCase.created_at).toLocaleString() : '-'}</p>
+                    <label className="form-label text-gray-500">Last Executed At</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.last_executed_at ? new Date(selectedTestCase.last_executed_at).toLocaleString() : 'Never'}</p>
                   </div>
                   <div>
-                    <label className="form-label text-gray-500">Updated At</label>
-                    <p className="text-sm text-gray-900">{selectedTestCase.updated_at ? new Date(selectedTestCase.updated_at).toLocaleString() : '-'}</p>
+                    <label className="form-label text-gray-500">Created At</label>
+                    <p className="text-sm text-gray-900">{selectedTestCase.created_at ? new Date(selectedTestCase.created_at).toLocaleString() : '-'}</p>
                   </div>
                 </div>
 

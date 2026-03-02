@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import BLoader from '../../components/BLoader'
+import { toast } from '../../utils/toast'
+import { confirmDialog } from '../../utils/confirm'
 
 const Environments = () => {
   const { t } = useLanguage()
@@ -60,7 +62,7 @@ const Environments = () => {
   }, [fetchEnvironments])
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this environment?')) return
+    if (!await confirmDialog('Delete this environment?', 'Delete Environment')) return
     try {
       const res = await fetch(`/api/v1/environments/${id}`, {
         method: 'DELETE',
@@ -69,7 +71,7 @@ const Environments = () => {
       if (!res.ok) throw new Error('Failed to delete environment')
       setEnvironments(prev => prev.filter(e => e.id !== id))
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Delete failed'}`)
+      toast.error(error instanceof Error ? error.message : 'Delete failed')
     }
   }
 
@@ -140,7 +142,7 @@ const Environments = () => {
         throw new Error(error.errors ? JSON.stringify(error.errors) : 'Failed to create environment')
       }
 
-      alert('✅ Environment created successfully and saved to database!')
+      toast.success('Environment created successfully and saved to database!')
       setFormData({
         name: '',
         description: '',
@@ -163,7 +165,7 @@ const Environments = () => {
       setShowModal(false)
       fetchEnvironments()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to create environment'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to create environment')
       console.error('Error creating environment:', error)
     }
   }
@@ -202,7 +204,7 @@ const Environments = () => {
       setConfigEnv(null)
       fetchEnvironments()
     } catch (error) {
-      alert(`❌ Error: ${error instanceof Error ? error.message : 'Failed to update environment'}`)
+      toast.error(error instanceof Error ? error.message : 'Failed to update environment')
     }
   }
 

@@ -67,25 +67,6 @@ class Api::V1::CalendarEventsController < ApplicationController
     render json: events.map { |e| event_json(e) }
   end
 
-  def import
-    render json: { message: 'Import received', count: 0 }
-  end
-
-  def export
-    events = CalendarEvent.includes(:created_by).order(start_time: :asc)
-    ical = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//BugZera//EN\r\n"
-    events.each do |e|
-      ical += "BEGIN:VEVENT\r\n"
-      ical += "UID:#{e.id}@bugzera\r\n"
-      ical += "SUMMARY:#{e.title}\r\n"
-      ical += "DTSTART:#{e.start_time.utc.strftime('%Y%m%dT%H%M%SZ')}\r\n" if e.start_time
-      ical += "DESCRIPTION:#{e.description}\r\n" if e.description.present?
-      ical += "END:VEVENT\r\n"
-    end
-    ical += "END:VCALENDAR\r\n"
-    send_data ical, type: 'text/calendar', disposition: 'attachment', filename: 'events.ics'
-  end
-
   private
 
   def set_calendar_event
