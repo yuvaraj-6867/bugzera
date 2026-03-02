@@ -28,26 +28,27 @@ jobs:
         working-directory: frontend
         run: npx vite build
 
-      - name: Setup SSH agent
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          eval $(ssh-agent -s)
-          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
-          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
-
-      - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
+      - name: Encode dist as base64
         run: |
           tar -czf /tmp/frontend-dist.tar.gz -C frontend/dist .
-          scp -o StrictHostKeyChecking=no /tmp/frontend-dist.tar.gz ${EC2_USER}@${EC2_HOST}:/tmp/frontend-dist.tar.gz
-          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "mkdir -p /tmp/bugzera-dist && tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist && docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/ && docker exec bugzera-frontend-1 nginx -s reload && rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz && echo 'Frontend deployed'"
+          base64 /tmp/frontend-dist.tar.gz > /tmp/frontend-dist.b64
+          echo "DIST_B64=$(cat /tmp/frontend-dist.b64)" >> $GITHUB_ENV
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DIST_B64
+          script: |
+            echo "$DIST_B64" | base64 -d > /tmp/frontend-dist.tar.gz
+            mkdir -p /tmp/bugzera-dist
+            tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist
+            docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/
+            docker exec bugzera-frontend-1 nginx -s reload
+            rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz
+            echo "Frontend deployed successfully"
 
   deploy-backend:
     name: Deploy Backend (run migrations)
