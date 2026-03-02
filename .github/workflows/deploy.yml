@@ -28,27 +28,22 @@ jobs:
         working-directory: frontend
         run: npx vite build
 
-      - name: Encode dist as base64
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 to known hosts
+        run: ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           tar -czf /tmp/frontend-dist.tar.gz -C frontend/dist .
-          base64 /tmp/frontend-dist.tar.gz > /tmp/frontend-dist.b64
-          echo "DIST_B64=$(cat /tmp/frontend-dist.b64)" >> $GITHUB_ENV
-
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DIST_B64
-          script: |
-            echo "$DIST_B64" | base64 -d > /tmp/frontend-dist.tar.gz
-            mkdir -p /tmp/bugzera-dist
-            tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist
-            docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/
-            docker exec bugzera-frontend-1 nginx -s reload
-            rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz
-            echo "Frontend deployed successfully"
+          scp /tmp/frontend-dist.tar.gz ${EC2_USER}@${EC2_HOST}:/tmp/frontend-dist.tar.gz
+          ssh ${EC2_USER}@${EC2_HOST} "mkdir -p /tmp/bugzera-dist && tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist && docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/ && docker exec bugzera-frontend-1 nginx -s reload && rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz && echo 'Deployed'"
 
   deploy-backend:
     name: Deploy Backend (run migrations)
