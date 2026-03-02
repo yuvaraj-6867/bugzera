@@ -28,27 +28,25 @@ jobs:
         working-directory: frontend
         run: npx vite build
 
-      - name: Copy dist to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "frontend/dist/*"
-          target: "/tmp/bugzera-dist"
-          strip_components: 2
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to nginx container
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+      - name: Deploy to EC2
+        run: |
+          tar -czf /tmp/frontend-dist.tar.gz -C frontend/dist .
+          scp -i ~/.ssh/deploy_key /tmp/frontend-dist.tar.gz ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/frontend-dist.tar.gz
+          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '
+            mkdir -p /tmp/bugzera-dist
+            tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist
             docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/
             docker exec bugzera-frontend-1 nginx -s reload
-            rm -rf /tmp/bugzera-dist
+            rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz
             echo "✅ Frontend deployed successfully"
+          '
 
   deploy-backend:
     name: Deploy Backend (run migrations)
