@@ -28,12 +28,17 @@ jobs:
         working-directory: frontend
         run: npx vite build
 
-      - name: Setup SSH key
+      - name: Setup SSH agent
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
+          eval $(ssh-agent -s)
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 700 ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
 
       - name: Deploy to EC2
         env:
@@ -41,8 +46,8 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           tar -czf /tmp/frontend-dist.tar.gz -C frontend/dist .
-          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no /tmp/frontend-dist.tar.gz ${EC2_USER}@${EC2_HOST}:/tmp/frontend-dist.tar.gz
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "mkdir -p /tmp/bugzera-dist && tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist && docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/ && docker exec bugzera-frontend-1 nginx -s reload && rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz && echo 'Frontend deployed'"
+          scp -o StrictHostKeyChecking=no /tmp/frontend-dist.tar.gz ${EC2_USER}@${EC2_HOST}:/tmp/frontend-dist.tar.gz
+          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "mkdir -p /tmp/bugzera-dist && tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist && docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/ && docker exec bugzera-frontend-1 nginx -s reload && rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz && echo 'Frontend deployed'"
 
   deploy-backend:
     name: Deploy Backend (run migrations)
