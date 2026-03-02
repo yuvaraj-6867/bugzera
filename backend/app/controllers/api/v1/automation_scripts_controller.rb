@@ -59,7 +59,8 @@ class Api::V1::AutomationScriptsController < ApplicationController
   end
 
   def script_params
-    params.require(:automation_script).permit(:name, :description, :script_path, :test_case_id, :status, :script_file)
+    params.require(:automation_script).permit(:name, :description, :script_path, :test_case_id, :status,
+                                              :script_file, :script_type, :language, :script_content, :framework)
   end
 
   def script_json(script)
@@ -68,7 +69,12 @@ class Api::V1::AutomationScriptsController < ApplicationController
       name: script.name,
       description: script.description,
       script_path: script.script_path,
+      script_type: script.script_type || 'functional',
+      language: script.language || 'javascript',
+      framework: script.framework || 'playwright',
+      script_content: script.script_content,
       status: script.status,
+      test_case_id: script.test_case_id,
       test_case: script.test_case&.title || 'No Test Case',
       created_by: script.user&.full_name || 'Unknown',
       success_rate: script.success_rate,

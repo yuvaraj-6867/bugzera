@@ -5,10 +5,21 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
 
+const LANG_LABELS: Record<string, string> = {
+  javascript: 'JS', python: 'Python', ruby: 'Ruby', java: 'Java'
+}
+const LANG_COLORS: Record<string, string> = {
+  javascript: 'bg-yellow-100 text-yellow-800',
+  python: 'bg-blue-100 text-blue-800',
+  ruby: 'bg-red-100 text-red-800',
+  java: 'bg-orange-100 text-orange-800'
+}
+
 const Automation = () => {
   const { t } = useLanguage()
   const { canDelete } = usePermissions()
   const [showModal, setShowModal] = useState(false)
+  const [viewScript, setViewScript] = useState<any>(null)
   const [workflows, setWorkflows] = useState<any[]>([])
   const [testCases, setTestCases] = useState<any[]>([])
   const [environments, setEnvironments] = useState<any[]>([])
@@ -129,7 +140,7 @@ const Automation = () => {
     try {
       const response = await fetch('/api/v1/automation_scripts', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
@@ -137,7 +148,11 @@ const Automation = () => {
           automation_script: {
             name: formData.workflowName,
             description: formData.description,
-            script_path: formData.scriptContent || '/scripts/default.js',
+            script_type: formData.scriptType,
+            language: formData.language,
+            framework: formData.scriptType,
+            script_content: formData.scriptContent,
+            script_path: formData.scriptContent ? null : '/scripts/default.js',
             test_case_id: formData.testCase || null,
             status: formData.status
           }
@@ -206,7 +221,8 @@ const Automation = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Workflow Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Script Path</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Type</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Language</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Test Case</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Created By</th>
@@ -217,7 +233,12 @@ const Automation = () => {
                 {workflows.map(workflow => (
                   <tr key={workflow.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-medium text-[#0F172A]">{workflow.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{workflow.script_path || 'N/A'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">{workflow.script_type || workflow.framework || 'N/A'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded ${LANG_COLORS[workflow.language] || 'bg-gray-100 text-gray-700'}`}>
+                        {LANG_LABELS[workflow.language] || workflow.language || 'N/A'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`badge ${workflow.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>
                         {workflow.status}
@@ -225,7 +246,12 @@ const Automation = () => {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{workflow.test_case || 'No Test Case'}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{workflow.created_by || 'Unknown'}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right flex justify-end gap-1">
+                      {workflow.script_content && (
+                        <button title="View Script" onClick={() => setViewScript(workflow)} className="p-1.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                        </button>
+                      )}
                       {canDelete.automation && (
                         <button title="Delete" onClick={() => handleDelete(workflow.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -236,6 +262,30 @@ const Automation = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* View Script Modal */}
+      {viewScript && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setViewScript(null)}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">{viewScript.name}</h2>
+                <div className="flex gap-2 mt-1">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-700 capitalize">{viewScript.script_type || viewScript.framework}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded ${LANG_COLORS[viewScript.language] || 'bg-gray-100 text-gray-700'}`}>{viewScript.language}</span>
+                  {viewScript.test_case && viewScript.test_case !== 'No Test Case' && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700">Test: {viewScript.test_case}</span>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setViewScript(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <pre className="bg-gray-950 text-green-400 rounded-lg p-4 text-sm font-mono whitespace-pre-wrap overflow-x-auto min-h-[200px]">{viewScript.script_content || '// No script content'}</pre>
+            </div>
           </div>
         </div>
       )}
