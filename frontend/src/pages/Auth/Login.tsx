@@ -16,6 +16,27 @@ const Login = () => {
   const [contactError, setContactError] = useState('')
   const [contactSuccess, setContactSuccess] = useState('')
 
+  const quickLogin = async (email: string, password: string) => {
+    setError('')
+    setLoading(true)
+    try {
+      const response = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Login failed')
+      localStorage.setItem('authToken', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      navigate('/projects')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -179,6 +200,29 @@ const Login = () => {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+        </div>
+
+        {/* Demo Access */}
+        <div className="mt-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
+          <p className="text-center text-gray-400 text-xs font-medium uppercase tracking-widest mb-4">Quick Demo Access</p>
+          <div className="grid grid-cols-5 gap-2">
+            {[
+              { role: 'Admin', email: 'admin@bugzera.com', color: 'from-red-500 to-orange-500' },
+              { role: 'Manager', email: 'manager@bugzera.com', color: 'from-purple-500 to-indigo-500' },
+              { role: 'Member', email: 'member@bugzera.com', color: 'from-blue-500 to-cyan-500' },
+              { role: 'Developer', email: 'developer@bugzera.com', color: 'from-green-500 to-teal-500' },
+              { role: 'Viewer', email: 'viewer@bugzera.com', color: 'from-gray-500 to-slate-500' },
+            ].map(({ role, email, color }) => (
+              <button
+                key={role}
+                onClick={() => quickLogin(email, 'password123')}
+                disabled={loading}
+                className={`bg-gradient-to-br ${color} text-white py-2 px-1 rounded-lg text-xs font-semibold hover:opacity-90 hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none`}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Footer */}
