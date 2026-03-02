@@ -64,3 +64,4 @@ jobs:
           script: |
             docker exec bugzera-backend-1 bundle exec rails db:migrate RAILS_ENV=production
             echo "✅ Migrations done"
+# Mon Mar  2 04:47:51 PM IST 2026
