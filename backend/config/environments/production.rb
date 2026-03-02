@@ -20,6 +20,11 @@ Rails.application.configure do
   end
 
   config.active_record.dump_schema_after_migration = false
+
+  # Active Record Encryption - read from environment variables
+  config.active_record.encryption.primary_key = ENV["ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY"]
+  config.active_record.encryption.deterministic_key = ENV["ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY"]
+  config.active_record.encryption.key_derivation_salt = ENV["ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT"]
   
   # Email configuration for production
   config.action_mailer.raise_delivery_errors = true
