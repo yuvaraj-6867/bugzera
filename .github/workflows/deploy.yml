@@ -41,16 +41,8 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           tar -czf /tmp/frontend-dist.tar.gz -C frontend/dist .
-          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            /tmp/frontend-dist.tar.gz ${EC2_USER}@${EC2_HOST}:/tmp/frontend-dist.tar.gz
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} bash << 'ENDSSH'
-            mkdir -p /tmp/bugzera-dist
-            tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist
-            docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/
-            docker exec bugzera-frontend-1 nginx -s reload
-            rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz
-            echo "Frontend deployed successfully"
-ENDSSH
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no /tmp/frontend-dist.tar.gz ${EC2_USER}@${EC2_HOST}:/tmp/frontend-dist.tar.gz
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "mkdir -p /tmp/bugzera-dist && tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/bugzera-dist && docker cp /tmp/bugzera-dist/. bugzera-frontend-1:/usr/share/nginx/html/ && docker exec bugzera-frontend-1 nginx -s reload && rm -rf /tmp/bugzera-dist /tmp/frontend-dist.tar.gz && echo 'Frontend deployed'"
 
   deploy-backend:
     name: Deploy Backend (run migrations)
