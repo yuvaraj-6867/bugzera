@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
 
@@ -223,7 +223,7 @@ const Environments = () => {
       </div>
 
       {/* Loading State */}
-      {loading && <BLoader />}
+      {loading && null}
 
       {/* Empty State */}
       {!loading && environments.length === 0 && (

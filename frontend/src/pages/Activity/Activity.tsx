@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
-import BLoader from '../../components/BLoader'
+
 import { downloadFile } from '../../utils/download'
 
 const Activity = () => {
@@ -112,7 +112,7 @@ const Activity = () => {
 
       {/* Activity Stream */}
       {loading ? (
-        <BLoader />
+        null
       ) : displayActivities.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           <div className="text-4xl mb-3">📭</div>

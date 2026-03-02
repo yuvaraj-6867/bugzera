@@ -10,7 +10,7 @@ import Calendar from '../Calendar/Calendar'
 import Environments from '../Environments/Environments'
 import Automation from '../Automation/Automation'
 import TestData from '../TestData/TestData'
-import BLoader from '../../components/BLoader'
+
 import { usePermissions } from '../../hooks/usePermissions'
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
@@ -87,7 +87,7 @@ const OverviewTab = ({ project, projectId }: { project: any; projectId: string }
     medium: 'bg-yellow-100 text-yellow-800', low: 'bg-blue-100 text-blue-800',
   }
 
-  if (loading) return <div className="flex justify-center py-12"><BLoader /></div>
+  if (loading) return <div className="flex justify-center py-12">null</div>
 
   const openTickets = data.tickets.filter(t => ['todo','in_progress','in_review','qa_ready'].includes(t.status))
   const closedTickets = data.tickets.filter(t => t.status === 'done')
@@ -489,7 +489,7 @@ const ProjectDetails = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAFBFC] flex items-center justify-center">
-        <BLoader />
+        null
       </div>
     )
   }

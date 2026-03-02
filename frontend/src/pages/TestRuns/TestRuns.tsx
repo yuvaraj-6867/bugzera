@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
 
@@ -147,7 +147,7 @@ const TestRuns = () => {
         </h3>
 
         {loading ? (
-          <BLoader />
+          null
         ) : testRuns.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
             {canCreate.testRuns ? 'No test runs yet. Click "Start Test Run" to begin.' : 'No test runs yet.'}

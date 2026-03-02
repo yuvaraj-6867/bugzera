@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { toast } from '../../utils/toast'
 
 
@@ -111,7 +111,7 @@ const Projects = () => {
         )}
       </div>
 
-      {loading && <BLoader />}
+      {loading && null}
 
       {!loading && projects.length === 0 && (
         <div className="text-center py-12">

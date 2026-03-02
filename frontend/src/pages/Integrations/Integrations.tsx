@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { confirmDialog } from '../../utils/confirm'
 
 const Integrations = () => {
@@ -120,7 +120,7 @@ const Integrations = () => {
       </div>
 
       {activeSection === 'webhooks' ? (
-        loadingWebhooks ? <BLoader /> :
+        loadingWebhooks ? null :
         webhooks.length === 0 ? (
           <div className="card text-center py-16">
             <div className="text-5xl mb-3">🪝</div>
@@ -162,7 +162,7 @@ const Integrations = () => {
           </div>
         )
       ) : loading ? (
-        <BLoader />
+        null
       ) : integrations.length === 0 ? (
         <div className="card text-center py-16">
           <p className="text-gray-400 text-lg mb-2">No integrations configured yet.</p>

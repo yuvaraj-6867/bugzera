@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
 
@@ -236,7 +236,7 @@ const Documents = () => {
       </div>
 
       {/* Loading State */}
-      {loading && <BLoader />}
+      {loading && null}
 
       {/* Empty State */}
       {!loading && documents.length === 0 && (
@@ -385,7 +385,7 @@ const Documents = () => {
                     </tbody>
                   </table>
                 ) : (
-                  <BLoader />
+                  null
                 )}
               </div>
             ) : (

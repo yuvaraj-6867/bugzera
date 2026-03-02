@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
 
@@ -86,7 +86,7 @@ const Labels = () => {
       </div>
 
       {loading ? (
-        <BLoader />
+        null
       ) : labels.length === 0 ? (
         <div className="card text-center py-16">
           <div className="text-5xl mb-3">🏷️</div>

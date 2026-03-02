@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { downloadFile } from '../../utils/download'
 
 
@@ -121,7 +121,7 @@ const Analytics = () => {
         ))}
       </div>
 
-      {loading ? <BLoader /> : (
+      {loading ? null : (
         <>
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && overview && (

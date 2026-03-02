@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
 
@@ -646,7 +646,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
       </div>      
 
       {/* Loading State */}
-      {loading && <BLoader />}
+      {loading && null}
 
       {/* Kanban Board View */}
       {!loading && viewMode === 'board' && (
@@ -1076,7 +1076,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                     </tbody>
                   </table>
                 ) : (
-                  <BLoader />
+                  null
                 )}
               </div>
             ) : (

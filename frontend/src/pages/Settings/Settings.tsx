@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage, type Language } from '../../contexts/LanguageContext'
-import BLoader from '../../components/BLoader'
+
 
 const Settings = () => {
   const { t } = useLanguage()
@@ -124,7 +124,7 @@ const Settings = () => {
 
         <div className="p-8">
           {loading ? (
-            <BLoader />
+            null
           ) : (
             <>
               {activeTab === 'profile' && <ProfileSettings user={user} />}
@@ -452,7 +452,7 @@ const NotificationSettings = () => {
     finally { setSaving(false) }
   }
 
-  if (loadingPrefs) return <BLoader />
+  if (loadingPrefs) return null
 
   return (
     <div className="space-y-8">

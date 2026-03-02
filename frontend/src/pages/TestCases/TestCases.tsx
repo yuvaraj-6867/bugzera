@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, type FormEvent, type ChangeEve
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { downloadFile } from '../../utils/download'
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
@@ -345,7 +345,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       </div>
 
       {/* Loading State */}
-      {loading && <BLoader />}
+      {loading && null}
 
       {/* Empty State */}
       {!loading && testCases.length === 0 && (

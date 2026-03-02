@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
-import BLoader from '../../components/BLoader'
+
 
 const hdrs = () => ({ 'Authorization': `Bearer ${localStorage.getItem('authToken')}` })
 
@@ -47,7 +47,7 @@ const Dashboard = () => {
         <button className="btn btn-primary" onClick={fetchData}>↻ Refresh</button>
       </div>
 
-      {loading ? <BLoader /> : (
+      {loading ? null : (
         <>
           {/* Tabs */}
           <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-fit">

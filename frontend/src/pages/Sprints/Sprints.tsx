@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } fr
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
-import BLoader from '../../components/BLoader'
+
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
 
@@ -217,7 +217,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
       </div>
 
       {/* Loading State */}
-      {loading && <BLoader />}
+      {loading && null}
 
       {/* Empty State */}
       {!loading && sprints.length === 0 && (

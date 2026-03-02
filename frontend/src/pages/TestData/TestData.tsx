@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
-import BLoader from '../../components/BLoader'
+
 import { confirmDialog } from '../../utils/confirm'
 
 const hdrs = () => ({
@@ -233,7 +233,7 @@ const TestData = () => {
       <div className="card">
         <h3 className="text-xl font-bold mb-4 text-[#0F172A] dark:text-gray-100">Test Data Sets</h3>
         {loading ? (
-          <BLoader />
+          null
         ) : testData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-8">No datasets yet. Click "+ New Dataset" to create one.</p>
         ) : (
