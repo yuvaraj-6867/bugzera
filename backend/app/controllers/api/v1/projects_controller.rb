@@ -28,6 +28,12 @@ class Api::V1::ProjectsController < ApplicationController
     Rails.logger.info "Permitted params: #{project_params.inspect}"
     project = Project.new(project_params)
     if project.save
+      # Add all existing users as project members so everyone can see the project
+      User.all.each do |user|
+        ProjectUser.find_or_create_by(project: project, user: user) do |pu|
+          pu.role = user.role == 'admin' ? 'admin' : 'member'
+        end
+      end
       render json: { id: project.id, name: project.name, status: project.status }, status: :created
     else
       render json: { errors: project.errors }, status: :unprocessable_content
