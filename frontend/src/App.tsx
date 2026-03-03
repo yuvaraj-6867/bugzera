@@ -4,6 +4,7 @@ import MainLayout from './components/layout/MainLayout'
 import PrivateRoute from './components/auth/PrivateRoute'
 import Login from './pages/Auth/Login'
 import ForgotPassword from './pages/Auth/ForgotPassword'
+import Landing from './pages/Landing/Landing'
 import Dashboard from './pages/Dashboard/Dashboard'
 import Projects from './pages/Projects/Projects'
 import ProjectDetails from './pages/Projects/ProjectDetails'
@@ -47,12 +48,13 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Protected Routes */}
           <Route element={<PrivateRoute />}>
-            <Route path="/" element={<Navigate to="/projects" replace />} />
+            <Route path="/home" element={<Navigate to="/projects" replace />} />
             <Route element={<MainLayout />}>
 
               {/* Tabs 1–13: All roles — Dashboard, Projects, Test Cases, Test Plans, Test Runs,
