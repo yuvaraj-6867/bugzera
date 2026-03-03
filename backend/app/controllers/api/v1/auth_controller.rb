@@ -15,9 +15,6 @@ class Api::V1::AuthController < ApplicationController
   end
 
   def login
-    # Rate limit: 5 attempts per IP per 10 minutes
-    return if rate_limited?("login:#{request.remote_ip}", 5)
-
     email    = params[:email] || params.dig(:auth, :email)
     password = params[:password] || params.dig(:auth, :password)
 
@@ -117,9 +114,6 @@ class Api::V1::AuthController < ApplicationController
   end
 
   def forgot_password
-    # Rate limit: 3 attempts per IP per 10 minutes
-    return if rate_limited?("forgot:#{request.remote_ip}", 3)
-
     email = params[:email]
     user  = User.find_by(email: email&.downcase&.strip)
 
@@ -197,13 +191,4 @@ class Api::V1::AuthController < ApplicationController
 
   private
 
-  # Returns true and renders 429 if rate limit exceeded; false otherwise.
-  def rate_limited?(cache_key, limit)
-    count = Rails.cache.increment(cache_key, 1, expires_in: 10.minutes)
-    if count > limit
-      render json: { error: 'Too many attempts. Please try again in 10 minutes.' }, status: :too_many_requests
-      return true
-    end
-    false
-  end
 end
