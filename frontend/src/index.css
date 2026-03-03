@@ -159,11 +159,11 @@
 
   /* Modal */
   .modal-backdrop {
-    @apply fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-8;
+    @apply fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 md:p-8;
   }
 
   .modal-content {
-    @apply bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl;
+    @apply bg-white rounded-2xl max-w-3xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto shadow-2xl;
   }
 
   :is(.dark .modal-content) {
@@ -171,7 +171,7 @@
   }
 
   .modal-header {
-    @apply px-8 py-6 border-b border-gray-200 flex justify-between items-center;
+    @apply px-4 md:px-8 py-4 md:py-6 border-b border-gray-200 flex justify-between items-center;
   }
 
   :is(.dark .modal-header) {
@@ -187,11 +187,11 @@
   }
 
   .modal-body {
-    @apply p-8;
+    @apply p-4 md:p-8;
   }
 
   .modal-footer {
-    @apply px-8 py-6 border-t border-gray-200 flex justify-end gap-4;
+    @apply px-4 md:px-8 py-4 md:py-6 border-t border-gray-200 flex justify-end gap-3 md:gap-4 flex-wrap;
   }
 
   :is(.dark .modal-footer) {
@@ -416,4 +416,82 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 /* Login page */
 html.dark .bg-gradient-to-br.from-\[\#0F172A\] {
   background: linear-gradient(to bottom right, #0F172A, #1e293b);
+}
+
+/* ============================
+   MOBILE RESPONSIVE UTILITIES
+   ============================ */
+
+/* Page headers - flex wrap on mobile */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Tables - horizontal scroll on mobile */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Kanban board - horizontal scroll on mobile */
+.kanban-board {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+}
+
+.kanban-column {
+  min-width: 260px;
+  flex-shrink: 0;
+}
+
+/* Stats/metric grid - responsive columns */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Form grid - stack on mobile */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Card padding smaller on mobile */
+@media (max-width: 639px) {
+  .card {
+    padding: 1rem;
+  }
+  .modal-title {
+    font-size: 1.25rem;
+  }
 }

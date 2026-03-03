@@ -1,7 +1,12 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 
-const Sidebar = () => {
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useLanguage()
@@ -41,8 +46,24 @@ const Sidebar = () => {
   }
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 fixed left-0 top-0 h-screen overflow-y-auto p-4">
-      <div className="mb-6">
+    <aside className={`
+      w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
+      fixed left-0 top-0 h-screen overflow-y-auto p-4 z-40
+      transition-transform duration-300 ease-in-out
+      ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      md:translate-x-0
+    `}>
+      {/* Mobile close button */}
+      <button
+        className="md:hidden absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+        onClick={onClose}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div className="mb-6 pr-8 md:pr-0">
         <h1 className="text-3xl font-heading font-extrabold bg-gradient-to-r from-primary-900 to-accent-neon bg-clip-text text-transparent">
           BugZera
         </h1>
@@ -63,6 +84,7 @@ const Sidebar = () => {
             <Link
               key={item.path}
               to={item.path}
+              onClick={onClose}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200
                 ${isActive
