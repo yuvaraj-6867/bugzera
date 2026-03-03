@@ -77,7 +77,7 @@ const Activity = () => {
     : activities.filter(a => a.trackable_type === filter || a.action?.includes(filter))
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC] dark:bg-transparent p-8">
+    <div className="min-h-screen bg-[#FAFBFC] dark:bg-transparent p-4 md:p-8">
       <div className="mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-4xl font-bold text-[#0F172A] dark:text-gray-100 mb-2">{t('activity.title')}</h1>

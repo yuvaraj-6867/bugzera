@@ -219,7 +219,7 @@ const TestData = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC] dark:bg-transparent p-8">
+    <div className="min-h-screen bg-[#FAFBFC] dark:bg-transparent p-4 md:p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold text-[#0F172A] dark:text-gray-100 mb-2">{t('testData.title')}</h1>
