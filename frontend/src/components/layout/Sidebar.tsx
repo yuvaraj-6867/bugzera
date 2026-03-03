@@ -16,7 +16,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     localStorage.removeItem('user')
     sessionStorage.clear()
     navigate('/login')
-    alert('Logged out successfully!')
   }
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
