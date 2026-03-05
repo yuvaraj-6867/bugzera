@@ -139,7 +139,11 @@ const Settings = () => {
 
         <div className="p-8">
           {loading ? (
-            null
+            <div className="space-y-4">
+              {Array.from({length: 4}).map((_,i) => (
+                <div key={i} className="animate-pulse bg-gray-100 dark:bg-gray-700 h-12 rounded-lg" />
+              ))}
+            </div>
           ) : (
             <>
               {activeTab === 'profile' && <ProfileSettings user={user} />}
