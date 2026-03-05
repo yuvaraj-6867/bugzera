@@ -5,8 +5,66 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BugZera</title>
+    <style>
+      #app-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        z-index: 9999;
+        gap: 20px;
+      }
+      #app-loader .loader-icon {
+        width: 80px;
+        height: 80px;
+        background: #7c3aed;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        font-weight: 700;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        box-shadow: 0 8px 32px rgba(124, 58, 237, 0.35);
+      }
+      #app-loader .loader-text {
+        color: #7c3aed;
+        font-size: 15px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        letter-spacing: 0.02em;
+      }
+      #app-loader .loader-dots {
+        display: flex;
+        gap: 8px;
+      }
+      #app-loader .loader-dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #7c3aed;
+        opacity: 0.3;
+        animation: bz-dot 1.2s ease-in-out infinite;
+      }
+      #app-loader .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+      #app-loader .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes bz-dot {
+        0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+        40% { opacity: 1; transform: scale(1); }
+      }
+    </style>
   </head>
   <body>
+    <div id="app-loader">
+      <div class="loader-icon">B</div>
+      <div class="loader-text">Loading BugZera...</div>
+      <div class="loader-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
