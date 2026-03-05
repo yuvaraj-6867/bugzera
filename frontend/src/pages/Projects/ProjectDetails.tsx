@@ -87,7 +87,20 @@ const OverviewTab = ({ project, projectId }: { project: any; projectId: string }
     medium: 'bg-yellow-100 text-yellow-800', low: 'bg-blue-100 text-blue-800',
   }
 
-  if (loading) return <div className="flex justify-center py-12">null</div>
+  if (loading) return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({length: 4}).map((_,i) => (
+          <div key={i} className="card animate-pulse"><div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" /></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {Array.from({length: 3}).map((_,i) => (
+          <div key={i} className="card animate-pulse"><div className="h-40 bg-gray-200 dark:bg-gray-700 rounded" /></div>
+        ))}
+      </div>
+    </div>
+  )
 
   const openTickets = data.tickets.filter(t => ['todo','in_progress','in_review','qa_ready'].includes(t.status))
   const closedTickets = data.tickets.filter(t => t.status === 'done')
