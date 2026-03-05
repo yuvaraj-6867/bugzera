@@ -17,32 +17,33 @@ interface AutoTranslateProps {
  */
 const AutoTranslate = memo(({ children, as: Tag, className }: AutoTranslateProps) => {
   const { language } = useLanguage()
-  const [translated, setTranslated] = useState(children)
+  const safeChildren = (children == null || children === 'null') ? '' : children
+  const [translated, setTranslated] = useState(safeChildren)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (language === 'en' || !children || !children.trim()) {
-      setTranslated(children)
+    if (language === 'en' || !safeChildren || !safeChildren.trim()) {
+      setTranslated(safeChildren)
       return
     }
 
     let cancelled = false
     setLoading(true)
 
-    translateText(children, 'en', language).then(result => {
+    translateText(safeChildren, 'en', language).then(result => {
       if (!cancelled) {
-        setTranslated(result)
+        setTranslated(result || safeChildren)
         setLoading(false)
       }
     }).catch(() => {
       if (!cancelled) {
-        setTranslated(children)
+        setTranslated(safeChildren)
         setLoading(false)
       }
     })
 
     return () => { cancelled = true }
-  }, [children, language])
+  }, [safeChildren, language])
 
   if (Tag) {
     return <Tag className={className}>{translated}</Tag>
