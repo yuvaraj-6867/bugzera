@@ -3,6 +3,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonList } from '../../components/Skeleton'
 
 const DEFAULT_COLORS = ['#6366F1', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316']
 
@@ -86,7 +87,7 @@ const Labels = () => {
       </div>
 
       {loading ? (
-        null
+        <SkeletonList count={6} />
       ) : labels.length === 0 ? (
         <div className="card text-center py-16">
           <div className="text-5xl mb-3">🏷️</div>

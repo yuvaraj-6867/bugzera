@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonList } from '../../components/Skeleton'
 
 const CATEGORIES = ['Getting Started', 'Best Practices', 'Integrations', 'Troubleshooting', 'API Reference', 'Tutorials', 'FAQ']
 
@@ -223,7 +224,7 @@ const KnowledgeBase = () => {
           {activeCategory || 'All Articles'}
           {!loading && <span className="text-sm font-normal text-gray-400 ml-2">({filtered.length})</span>}
         </h3>
-        {loading ? null : filtered.length === 0 ? (
+        {loading ? <SkeletonList count={4} /> : filtered.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-8">
             {articles.length === 0 ? 'No articles yet. Click "+ New Article" to create one.' : 'No articles match your filter.'}
           </p>
