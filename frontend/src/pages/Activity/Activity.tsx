@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 import { downloadFile } from '../../utils/download'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const Activity = () => {
   const { t } = useLanguage()
@@ -112,7 +113,7 @@ const Activity = () => {
 
       {/* Activity Stream */}
       {loading ? (
-        null
+        <SkeletonTable rows={8} />
       ) : displayActivities.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           <div className="text-4xl mb-3">📭</div>

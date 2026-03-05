@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonList } from '../../components/Skeleton'
 
 const Integrations = () => {
   const { t } = useLanguage()
@@ -162,7 +163,7 @@ const Integrations = () => {
           </div>
         )
       ) : loading ? (
-        null
+        <SkeletonList count={4} />
       ) : integrations.length === 0 ? (
         <div className="card text-center py-16">
           <p className="text-gray-400 text-lg mb-2">No integrations configured yet.</p>

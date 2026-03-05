@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent } fr
 import { useLanguage } from '../../contexts/LanguageContext'
 
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const hdrs = () => ({
   'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -233,7 +234,7 @@ const TestData = () => {
       <div className="card">
         <h3 className="text-xl font-bold mb-4 text-[#0F172A] dark:text-gray-100">Test Data Sets</h3>
         {loading ? (
-          null
+          <SkeletonTable rows={5} />
         ) : testData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-8">No datasets yet. Click "+ New Dataset" to create one.</p>
         ) : (

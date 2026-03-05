@@ -6,6 +6,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const APPROVAL_BADGE: Record<string, string> = {
   draft:       'bg-gray-100 text-gray-600',
@@ -236,7 +237,7 @@ const Documents = () => {
       </div>
 
       {/* Loading State */}
-      {loading && null}
+      {loading && <SkeletonTable rows={6} />}
 
       {/* Empty State */}
       {!loading && documents.length === 0 && (

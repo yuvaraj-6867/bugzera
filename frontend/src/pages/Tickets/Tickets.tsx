@@ -6,6 +6,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const statusColumns = [
   { id: 'todo', label: 'To Do', color: 'border-blue-400', bgColor: 'bg-blue-50', textColor: 'text-blue-700' },
@@ -646,7 +647,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
       </div>      
 
       {/* Loading State */}
-      {loading && null}
+      {loading && <SkeletonTable rows={6} />}
 
       {/* Kanban Board View */}
       {!loading && viewMode === 'board' && (

@@ -4,6 +4,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const LANG_LABELS: Record<string, string> = {
   javascript: 'JS', python: 'Python', ruby: 'Ruby', java: 'Java'
@@ -203,7 +204,7 @@ const Automation = () => {
       </div>
 
       {/* Loading State */}
-      {loading && null}
+      {loading && <SkeletonTable rows={6} />}
 
       {/* Empty State */}
       {!loading && workflows.length === 0 && (
