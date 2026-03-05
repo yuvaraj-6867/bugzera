@@ -680,12 +680,15 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                       onDragStart={(e) => handleDragStart(e, ticket)}
                       onDragEnd={handleDragEnd}
                       onClick={() => viewTicket(ticket.id)}
-                      className={`bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
+                      className={`bg-white rounded-lg p-3 shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
                         draggedTicket?.id === ticket.id ? 'opacity-50' : ''
-                      }`}
+                      } ${ticket.due_date && new Date(ticket.due_date) < new Date() && ticket.status !== 'done' ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="text-sm font-medium text-gray-900 line-clamp-2"><T>{ticket.title}</T></h4>
+                        {ticket.due_date && new Date(ticket.due_date) < new Date() && ticket.status !== 'done' && (
+                          <span className="text-xs text-red-600 font-semibold shrink-0 ml-1">Overdue</span>
+                        )}
                       </div>
                       {ticket.description && (
                         <p className="text-xs text-gray-500 mb-2 line-clamp-2"><T>{ticket.description}</T></p>
@@ -707,7 +710,13 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                       </div>
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <span>{ticket.assigned_user || 'Unassigned'}</span>
-                        <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                        {ticket.due_date ? (
+                          <span className={`font-medium ${new Date(ticket.due_date) < new Date() && ticket.status !== 'done' ? 'text-red-500' : 'text-gray-400'}`}>
+                            Due {new Date(ticket.due_date).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                        )}
                       </div>
                     </div>
                   ))}

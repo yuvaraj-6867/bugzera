@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
 import { usePermissions } from '../../hooks/usePermissions'
+import { SkeletonList } from '../../components/Skeleton'
+import { EmptyState, emptyIcons } from '../../components/EmptyState'
 
 import { toast } from '../../utils/toast'
 
@@ -111,12 +113,14 @@ const Projects = () => {
         )}
       </div>
 
-      {loading && null}
+      {loading && <SkeletonList count={6} />}
 
       {!loading && projects.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">No projects yet. Create your first project to get started!</p>
-        </div>
+        <EmptyState
+          icon={emptyIcons.projects}
+          title="No projects yet"
+          description="Create your first project to get started with test management and bug tracking."
+        />
       )}
 
       {!loading && projects.length > 0 && (

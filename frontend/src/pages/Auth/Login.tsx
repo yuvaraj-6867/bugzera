@@ -29,7 +29,12 @@ const Login = () => {
       if (!response.ok) throw new Error(data.error || 'Login failed')
       localStorage.setItem('authToken', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      navigate('/projects')
+      if (data.user?.must_change_password) {
+        localStorage.setItem('must_change_password', 'true')
+        navigate('/settings')
+      } else {
+        navigate('/projects')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -58,7 +63,12 @@ const Login = () => {
       if (data.token) {
         localStorage.setItem('authToken', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
-        navigate('/Projects')
+        if (data.user?.must_change_password) {
+          localStorage.setItem('must_change_password', 'true')
+          navigate('/settings')
+        } else {
+          navigate('/projects')
+        }
       } else {
         throw new Error('No token received')
       }
