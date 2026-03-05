@@ -70,6 +70,7 @@ const Settings = () => {
       })
       if (res.ok) {
         setMessage('Password changed successfully')
+        localStorage.removeItem('must_change_password')
         setTimeout(() => setMessage(''), 3000)
       } else {
         const data = await res.json()
@@ -90,12 +91,26 @@ const Settings = () => {
     { id: 'audit_logs' as const, labelKey: 'settings.auditLogs' },
   ]
 
+  const mustChangePassword = localStorage.getItem('must_change_password') === 'true'
+
   return (
     <div className="min-h-screen bg-[#FAFBFC] dark:bg-transparent p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-[#0F172A] dark:text-gray-100 mb-2">{t('settings.title')}</h1>
         <p className="text-[#64748B] dark:text-gray-400">{t('settings.subtitle')}</p>
       </div>
+
+      {mustChangePassword && (
+        <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700 flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">Password Change Required</p>
+            <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">You were invited to BugZera. Please change your password before continuing.</p>
+          </div>
+        </div>
+      )}
 
       {message && (
         <div className={`mb-4 p-3 rounded-lg text-sm font-medium ${message.includes('success') ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
