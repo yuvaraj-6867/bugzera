@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { Skeleton } from '../../components/Skeleton'
 
 
 const hdrs = () => ({ 'Authorization': `Bearer ${localStorage.getItem('authToken')}` })
@@ -47,7 +48,14 @@ const Dashboard = () => {
         <button className="btn btn-primary" onClick={fetchData}>↻ Refresh</button>
       </div>
 
-      {loading ? null : (
+      {loading ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({length: 4}).map((_,i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          </div>
+          <Skeleton className="h-48 rounded-xl" />
+        </div>
+      ) : (
         <>
           {/* Tabs */}
           <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-fit">

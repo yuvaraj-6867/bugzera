@@ -6,6 +6,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { downloadFile } from '../../utils/download'
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const TestCases = ({ projectId }: { projectId?: string }) => {
   const { t } = useLanguage()
@@ -345,7 +346,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       </div>
 
       {/* Loading State */}
-      {loading && null}
+      {loading && <SkeletonTable rows={6} />}
 
       {/* Empty State */}
       {!loading && testCases.length === 0 && (

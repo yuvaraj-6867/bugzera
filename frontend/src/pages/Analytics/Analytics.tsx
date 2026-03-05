@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 
 import { downloadFile } from '../../utils/download'
+import { Skeleton } from '../../components/Skeleton'
 
 
 const hdrs = () => ({ 'Authorization': `Bearer ${localStorage.getItem('authToken')}` })
@@ -121,7 +122,15 @@ const Analytics = () => {
         ))}
       </div>
 
-      {loading ? null : (
+      {loading ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({length: 4}).map((_,i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          </div>
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
+        </div>
+      ) : (
         <>
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && overview && (

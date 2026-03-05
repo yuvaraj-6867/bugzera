@@ -480,7 +480,14 @@ const Calendar = () => {
             ))}
           </div>
           {loading ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400">Loading…</div>
+            <div className="flex-1 grid grid-cols-7 grid-rows-5 overflow-hidden">
+              {Array.from({length: 35}).map((_,i) => (
+                <div key={i} className="border border-gray-100 dark:border-gray-800 p-1">
+                  <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-6 rounded mb-1" />
+                  <div className="animate-pulse bg-gray-100 dark:bg-gray-800 h-3 rounded" />
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="flex-1 grid grid-cols-7 grid-rows-5 overflow-hidden">
               {cells.map((cell, idx) => {

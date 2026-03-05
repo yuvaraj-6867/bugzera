@@ -4,6 +4,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const statusColor: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -147,7 +148,7 @@ const TestRuns = () => {
         </h3>
 
         {loading ? (
-          null
+          <SkeletonTable rows={5} />
         ) : testRuns.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
             {canCreate.testRuns ? 'No test runs yet. Click "Start Test Run" to begin.' : 'No test runs yet.'}

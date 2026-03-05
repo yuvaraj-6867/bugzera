@@ -4,6 +4,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 interface TestCase {
   id: number
@@ -237,7 +238,7 @@ const TestPlans = () => {
       </div>
 
       {/* Loading State */}
-      {loading && null}
+      {loading && <SkeletonTable rows={6} />}
 
       {/* Empty State */}
       {!loading && testPlans.length === 0 && (

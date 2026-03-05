@@ -4,6 +4,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const Users = () => {
   const { t } = useLanguage()
@@ -281,7 +282,7 @@ const Users = () => {
       </div>
 
       {/* Loading State */}
-      {loading && null}
+      {loading && <SkeletonTable rows={6} />}
 
       {/* Empty State */}
       {!loading && users.length === 0 && (
