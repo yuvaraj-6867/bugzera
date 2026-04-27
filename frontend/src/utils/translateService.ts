@@ -36,33 +36,6 @@ function setCache(cache: Record<string, string>) {
   }
 }
 
-// Queue to batch requests and avoid flooding the API
-let pendingQueue: Map<string, { resolve: (v: string) => void; reject: (e: Error) => void }[]> = new Map()
-let flushTimeout: ReturnType<typeof setTimeout> | null = null
-
-function flushQueue(from: string, to: string) {
-  const entries = Array.from(pendingQueue.entries())
-  pendingQueue = new Map()
-
-  // Process one at a time to respect rate limits
-  const processNext = async (index: number) => {
-    if (index >= entries.length) return
-    const [text, callbacks] = entries[index]
-
-    try {
-      const result = await fetchTranslation(text, from, to)
-      callbacks.forEach(cb => cb.resolve(result))
-    } catch (err) {
-      callbacks.forEach(cb => cb.resolve(text)) // fallback to original
-    }
-
-    // Small delay between requests
-    setTimeout(() => processNext(index + 1), 100)
-  }
-
-  processNext(0)
-}
-
 async function fetchTranslation(text: string, from: string, to: string): Promise<string> {
   const fromLang = langMap[from] || 'en'
   const toLang = langMap[to] || 'en'

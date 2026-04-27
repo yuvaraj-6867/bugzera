@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 
@@ -50,7 +51,7 @@ const Activity = () => {
       if (filter !== 'all') params.set('action_type', filter)
       const res = await fetch(`/api/v1/activities?${params}`, { headers })
       if (res.ok) {
-        const data = await res.json()
+        const data = await safeJson(res)
         const items = data.activities || []
         setActivities(prev => append ? [...prev, ...items] : items)
         setMeta(data.meta || { total: items.length, pages: 1 })

@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -37,7 +38,7 @@ const Projects = () => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
       })
       if (!response.ok) throw new Error('Failed to fetch projects')
-      const data = await response.json()
+      const data = await safeJson(response)
       setProjects(data.projects || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
@@ -89,7 +90,7 @@ const Projects = () => {
         })
       })
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.message || 'Failed to create project')
       }
       setShowModal(false)

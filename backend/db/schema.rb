@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_28_000100) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_02_000001) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -129,6 +129,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_28_000100) do
     t.string "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "script_type", default: "functional"
+    t.string "language", default: "javascript"
+    t.text "script_content"
+    t.string "framework", default: "playwright"
     t.index ["test_case_id"], name: "index_automation_scripts_on_test_case_id"
     t.index ["user_id"], name: "index_automation_scripts_on_user_id"
   end

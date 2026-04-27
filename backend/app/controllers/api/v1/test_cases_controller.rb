@@ -29,6 +29,7 @@ class Api::V1::TestCasesController < ApplicationController
         steps: tc.steps,
         expected_results: tc.expected_results,
         status: tc.status,
+        priority: tc.priority,
         project_id: tc.project_id,
         project_name: tc.project&.name || 'No Project',
         assigned_user: tc.assigned_user ? "#{tc.assigned_user.first_name} #{tc.assigned_user.last_name}" : 'Unassigned',
@@ -144,7 +145,7 @@ class Api::V1::TestCasesController < ApplicationController
     end
     
     project_id = params.dig(:test_case, :project_id)
-    project_id = project_id.present? ? project_id.to_i : nil
+    project_id = project_id.present? ? project_id.to_i : test_case.project_id
     
     update_params = test_case_params.except(:assigned_user).merge(
       assigned_user_id: assigned_user_id,

@@ -119,6 +119,7 @@ class Api::V1::TestPlansController < ApplicationController
           id: tptc.test_case.id,
           title: tptc.test_case.title,
           status: tptc.test_case.status,
+          priority: tptc.test_case.priority,
           execution_order: tptc.execution_order,
           test_case_number: "TC-#{tptc.test_case.id.to_s.rjust(3, '0')}"
         }

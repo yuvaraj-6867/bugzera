@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback } from 'react'
 import { usePermissions } from '../../hooks/usePermissions'
 
@@ -26,13 +27,13 @@ const Labels = () => {
   const fetchLabels = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/v1/labels', { headers })
-    if (res.ok) { const d = await res.json(); setLabels(d.labels || []) }
+    if (res.ok) { const d = await safeJson(res); setLabels(d.labels || []) }
     setLoading(false)
   }, [])
 
   const fetchProjects = useCallback(async () => {
     const res = await fetch('/api/v1/projects', { headers })
-    if (res.ok) { const d = await res.json(); setProjects(d.projects || []) }
+    if (res.ok) { const d = await safeJson(res); setProjects(d.projects || []) }
   }, [])
 
   useEffect(() => { fetchLabels(); fetchProjects() }, [fetchLabels, fetchProjects])
@@ -65,7 +66,7 @@ const Labels = () => {
       body: JSON.stringify({ label: form })
     })
     if (res.ok) { setShowModal(false); fetchLabels() }
-    else { const e = await res.json(); toast.error(JSON.stringify(e.errors || 'Failed')) }
+    else { const e = await safeJson(res); toast.error(JSON.stringify(e.errors || 'Failed')) }
   }
 
   const handleDelete = async (id: number) => {

@@ -145,12 +145,6 @@ class Api::V1::TicketsController < ApplicationController
     sprint_id = params.dig(:ticket, :sprint_id)
     sprint_id = sprint_id.present? ? sprint_id.to_i : nil
 
-    # Default to active sprint if no sprint selected
-    if sprint_id.nil?
-      active_sprint = Sprint.find_by(status: 'active')
-      sprint_id = active_sprint&.id
-    end
-
     ticket = Ticket.new(ticket_params.except(:assigned_user, :assigned_to, :attachments).merge(
       created_by_id: creator_id,
       assigned_user_id: assigned_user_id,

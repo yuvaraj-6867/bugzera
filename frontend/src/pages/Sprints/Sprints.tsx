@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
@@ -49,7 +50,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
         throw new Error('Failed to fetch sprints')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setSprints(data.sprints || [])
     } catch (error) {
       console.error('Error fetching sprints:', error)
@@ -103,7 +104,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.message || 'Failed to create sprint')
       }
 
@@ -141,7 +142,7 @@ const Sprints = ({ projectId }: { projectId?: string }) => {
       if (!response.ok) {
         throw new Error('Failed to fetch sprint')
       }
-      const data = await response.json()
+      const data = await safeJson(response)
       setSelectedSprint(data)
     } catch (error) {
       console.error('Error fetching sprint:', error)

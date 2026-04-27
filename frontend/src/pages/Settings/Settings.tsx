@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useRef, type ChangeEvent } from 'react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage, type Language } from '../../contexts/LanguageContext'
@@ -26,7 +27,7 @@ const Settings = () => {
     try {
       const res = await fetch('/api/settings', { headers })
       if (res.ok) {
-        const data = await res.json()
+        const data = await safeJson(res)
         setSettings(data)
       }
     } catch (err) {
@@ -73,7 +74,7 @@ const Settings = () => {
         localStorage.removeItem('must_change_password')
         setTimeout(() => setMessage(''), 3000)
       } else {
-        const data = await res.json()
+        const data = await safeJson(res)
         setMessage(data.error || 'Failed to change password')
       }
     } catch {
@@ -192,7 +193,7 @@ const ProfileSettings = ({ user }: { user: any }) => {
         },
         body: JSON.stringify({ avatar: preview })
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (res.ok) {
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
         storedUser.avatar = preview
@@ -464,7 +465,7 @@ const NotificationSettings = () => {
       const res = await fetch('/api/v1/notifications/preferences', {
         method: 'PUT', headers: hdrs, body: JSON.stringify(prefs)
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (res.ok) { setPrefs(data); setMessage('Preferences saved successfully'); setTimeout(() => setMessage(''), 3000) }
       else setMessage(data.error || 'Failed to save')
     } catch { setMessage('Failed to save') }
@@ -610,7 +611,7 @@ const TwoFactorAuth = () => {
   const startSetup = async () => {
     setBusy(true)
     const res = await fetch('/api/v1/totp/setup', { headers: hdrs })
-    const d = await res.json()
+    const d = await safeJson(res)
     setSetupData(d)
     setBusy(false)
   }
@@ -619,7 +620,7 @@ const TwoFactorAuth = () => {
     if (!verifyCode.trim()) return
     setBusy(true)
     const res = await fetch('/api/v1/totp/enable', { method: 'POST', headers: hdrs, body: JSON.stringify({ code: verifyCode }) })
-    const d = await res.json()
+    const d = await safeJson(res)
     if (res.ok) { setStatus(true); setBackupCodes(d.backup_codes || []); setSetupData(null); setMsg('2FA enabled successfully!') }
     else setMsg(d.error || 'Invalid code')
     setBusy(false)
@@ -629,7 +630,7 @@ const TwoFactorAuth = () => {
     if (!disableCode.trim()) return
     setBusy(true)
     const res = await fetch('/api/v1/totp/disable', { method: 'POST', headers: hdrs, body: JSON.stringify({ code: disableCode }) })
-    const d = await res.json()
+    const d = await safeJson(res)
     if (res.ok) { setStatus(false); setDisableCode(''); setMsg('2FA disabled.') }
     else setMsg(d.error || 'Invalid code')
     setBusy(false)
@@ -806,7 +807,7 @@ const AuditLogs = () => {
     setLoading(true)
     fetch(`/api/v1/audit_logs?page=${page}&per_page=20`, { headers })
       .then(async res => {
-        if (res.ok) { const d = await res.json(); setLogs(d.audit_logs || []); setMeta(d.meta || { total: 0, pages: 1 }) }
+        if (res.ok) { const d = await safeJson(res); setLogs(d.audit_logs || []); setMeta(d.meta || { total: 0, pages: 1 }) }
       })
       .finally(() => setLoading(false))
   }, [page])

@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -60,7 +61,7 @@ const TestPlans = () => {
 
       if (!response.ok) throw new Error('Failed to fetch test plans')
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setTestPlans(data.test_plans || [])
     } catch (error) {
       console.error('Error fetching test plans:', error)
@@ -80,7 +81,7 @@ const TestPlans = () => {
 
       if (!response.ok) throw new Error('Failed to fetch test cases')
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setAllTestCases(data.test_cases || [])
     } catch (error) {
       console.error('Error fetching test cases:', error)
@@ -111,11 +112,11 @@ const TestPlans = () => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.message || 'Failed to create test plan')
       }
 
-      const result = await response.json()
+      const result = await safeJson(response)
       toast.success(`Test Plan "${result.test_plan.name}" created successfully!`)
       setFormData({
         name: '',
@@ -156,7 +157,7 @@ const TestPlans = () => {
 
       if (!response.ok) throw new Error('Failed to fetch test plan details')
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setSelectedTestPlan(data.test_plan)
       setShowAddTestCaseModal(false)
     } catch (error) {
@@ -179,7 +180,7 @@ const TestPlans = () => {
 
       if (!response.ok) throw new Error('Failed to add test case')
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setSelectedTestPlan(data.test_plan)
       setShowAddTestCaseModal(false)
       fetchTestPlans()
@@ -207,7 +208,7 @@ const TestPlans = () => {
 
       if (!response.ok) throw new Error('Failed to remove test case')
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setSelectedTestPlan(data.test_plan)
       fetchTestPlans()
       toast.success('Test case removed from plan!')

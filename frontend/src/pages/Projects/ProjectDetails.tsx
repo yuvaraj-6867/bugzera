@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import TestCases from '../TestCases/TestCases'
@@ -418,7 +419,7 @@ const ProjectDetails = () => {
       setLoading(true)
       const response = await fetch(`/api/v1/projects/${projectId}`, { headers: hdrs() })
       if (!response.ok) throw new Error('Failed to fetch project')
-      const data = await response.json()
+      const data = await safeJson(response)
       setProject(data)
     } catch (error) {
       console.error('Error fetching project:', error)
@@ -476,7 +477,7 @@ const ProjectDetails = () => {
         })
       })
       if (!response.ok) {
-        const err = await response.json()
+        const err = await safeJson(response)
         throw new Error(err.message || 'Failed to update project')
       }
       setShowModal(false)

@@ -11,7 +11,7 @@ class Integration < ApplicationRecord
   #   ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
   #   ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
   #   ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
-  encrypts :api_key, :secret_token if ActiveRecord::Encryption.config.primary_key.present?
+  encrypts :api_key, :secret_token rescue nil
 
   # Mask sensitive fields in JSON responses
   def api_key_masked

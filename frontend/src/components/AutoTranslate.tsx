@@ -1,10 +1,10 @@
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, memo, type ElementType } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { translateText } from '../utils/translateService'
 
 interface AutoTranslateProps {
   children: string
-  as?: keyof JSX.IntrinsicElements
+  as?: ElementType
   className?: string
 }
 
@@ -19,7 +19,6 @@ const AutoTranslate = memo(({ children, as: Tag, className }: AutoTranslateProps
   const { language } = useLanguage()
   const safeChildren = (children == null || children === 'null') ? '' : children
   const [translated, setTranslated] = useState(safeChildren)
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (language === 'en' || !safeChildren || !safeChildren.trim()) {
@@ -28,17 +27,14 @@ const AutoTranslate = memo(({ children, as: Tag, className }: AutoTranslateProps
     }
 
     let cancelled = false
-    setLoading(true)
 
     translateText(safeChildren, 'en', language).then(result => {
       if (!cancelled) {
         setTranslated(result || safeChildren)
-        setLoading(false)
       }
     }).catch(() => {
       if (!cancelled) {
         setTranslated(safeChildren)
-        setLoading(false)
       }
     })
 
@@ -46,7 +42,8 @@ const AutoTranslate = memo(({ children, as: Tag, className }: AutoTranslateProps
   }, [safeChildren, language])
 
   if (Tag) {
-    return <Tag className={className}>{translated}</Tag>
+    const Component = Tag as any
+    return <Component className={className}>{translated}</Component>
   }
 
   return <>{translated}</>

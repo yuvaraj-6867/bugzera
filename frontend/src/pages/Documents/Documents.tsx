@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import * as XLSX from 'xlsx'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -45,7 +46,7 @@ const Documents = () => {
         throw new Error('Failed to fetch documents')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setDocuments(data.documents || [])
     } catch (error) {
       console.error('Error fetching documents:', error)
@@ -104,7 +105,7 @@ const Documents = () => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.error || 'Failed to upload document')
       }
 
@@ -156,19 +157,6 @@ const Documents = () => {
   const isVideoFile = (name: string) => /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(name)
   const isPdfFile = (name: string) => /\.pdf$/i.test(name)
   const isExcelFile = (name: string) => /\.(xlsx|xls|csv)$/i.test(name)
-
-  const getFileType = (name: string) => {
-    const ext = name.split('.').pop()?.toLowerCase() || ''
-    if (isImageFile(name)) return { label: 'Image', color: 'bg-purple-100 text-purple-800' }
-    if (isVideoFile(name)) return { label: 'Video', color: 'bg-pink-100 text-pink-800' }
-    if (isPdfFile(name)) return { label: 'PDF', color: 'bg-red-100 text-red-800' }
-    if (isExcelFile(name)) return { label: ext.toUpperCase(), color: 'bg-green-100 text-green-800' }
-    if (/\.(doc|docx)$/i.test(name)) return { label: 'DOC', color: 'bg-blue-100 text-blue-800' }
-    if (/\.(ppt|pptx)$/i.test(name)) return { label: 'PPT', color: 'bg-orange-100 text-orange-800' }
-    if (/\.(txt|md)$/i.test(name)) return { label: 'TXT', color: 'bg-gray-100 text-gray-800' }
-    if (/\.(zip|rar|7z|tar|gz)$/i.test(name)) return { label: 'Archive', color: 'bg-yellow-100 text-yellow-800' }
-    return { label: ext.toUpperCase() || 'File', color: 'bg-gray-100 text-gray-800' }
-  }
 
   const handleApproval = async (documentId: number, action: 'approve' | 'reject' | 'in_review') => {
     const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json' }
