@@ -1,5 +1,5 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
-import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import { toast } from '../../utils/toast'
 import { confirmDialog } from '../../utils/confirm'
@@ -67,7 +67,6 @@ const eventClass = (ev: any) =>
   ev.is_google ? 'bg-blue-500 text-white' : (EVENT_COLORS[ev.event_type] || 'bg-gray-400 text-white')
 
 const Calendar = () => {
-  const { t } = useLanguage()
   const { canCreate, canEdit, canDelete } = usePermissions()
   const today = new Date()
 
@@ -93,7 +92,6 @@ const Calendar = () => {
   // Google Calendar
   const [gcalConnected, setGcalConnected]   = useState(false)
   const [gcalEmail,     setGcalEmail]       = useState('')
-  const [gcalSyncing,   setGcalSyncing]     = useState(false)
   const [gcalLoading,   setGcalLoading]     = useState(false)
   const [gcalEvents,    setGcalEvents]      = useState<any[]>([])
 
@@ -120,7 +118,7 @@ const Calendar = () => {
   const checkGcalStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/v1/google_calendar/status', { headers })
-      const data = await res.json()
+      const data = await safeJson(res)
       setGcalConnected(data.connected)
       setGcalEmail(data.email || '')
     } catch { /* ignore */ }
@@ -130,7 +128,7 @@ const Calendar = () => {
     setGcalLoading(true)
     try {
       const res  = await fetch('/api/v1/google_calendar/auth_url', { headers })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (data.url) {
         const popup = window.open(data.url, 'gcal_auth', 'width=500,height=600')
         const timer = setInterval(() => {
@@ -138,17 +136,6 @@ const Calendar = () => {
         }, 500)
       }
     } catch { toast.error('Failed to get auth URL'); setGcalLoading(false) }
-  }
-
-  const syncGcal = async () => {
-    setGcalSyncing(true)
-    try {
-      const res  = await fetch('/api/v1/google_calendar/sync', { method: 'POST', headers })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Sync failed')
-      toast.success(`Synced ${data.synced} events to Google Calendar`)
-    } catch (err) { toast.error(err instanceof Error ? err.message : 'Sync failed') }
-    finally { setGcalSyncing(false) }
   }
 
   const disconnectGcal = async () => {
@@ -169,7 +156,7 @@ const Calendar = () => {
       const nextMonth = month === 11 ? 1 : month + 2
       const end = `${nextYear}-${pad(nextMonth)}-01`   // exclusive upper bound = first of next month
       const res  = await fetch(`/api/v1/google_calendar/events?start=${start}&end=${end}`, { headers })
-      const data = await res.json()
+      const data = await safeJson(res)
       setGcalEvents(Array.isArray(data) ? data : [])
     } catch { setGcalEvents([]) }
   }, [])
@@ -203,7 +190,7 @@ const Calendar = () => {
       const res = await fetch('/api/v1/calendar_events', {
         headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       setEvents(Array.isArray(data) ? data : [])
     } catch { setEvents([]) }
     finally { setLoading(false) }

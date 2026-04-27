@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -48,7 +49,7 @@ const Environments = () => {
         throw new Error('Failed to fetch environments')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setEnvironments(data.environments || [])
     } catch (error) {
       console.error('Error fetching environments:', error)
@@ -83,7 +84,7 @@ const Environments = () => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       setHealthResults(prev => ({ ...prev, [env.id]: data }))
       // Update status in list
       setEnvironments(prev => prev.map(e => e.id === env.id ? { ...e, status: data.status } : e))
@@ -139,7 +140,7 @@ const Environments = () => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.errors ? JSON.stringify(error.errors) : 'Failed to create environment')
       }
 
@@ -198,7 +199,7 @@ const Environments = () => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.errors ? JSON.stringify(error.errors) : 'Failed to update environment')
       }
 

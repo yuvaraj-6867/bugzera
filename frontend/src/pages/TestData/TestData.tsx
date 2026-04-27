@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 
@@ -91,7 +92,7 @@ const TestData = () => {
       setLoading(true)
       const res = await fetch('/api/v1/test_data_sets', { headers: hdrs() })
       if (res.ok) {
-        const data = await res.json()
+        const data = await safeJson(res)
         setTestData(data.test_data_sets || [])
       }
     } catch (err) {
@@ -168,7 +169,7 @@ const TestData = () => {
           }
         })
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok) {
         setFormError(data.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to save dataset')
         return

@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -56,7 +57,7 @@ const Automation = () => {
         throw new Error('Failed to fetch automation scripts')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setWorkflows(data.automation_scripts || [])
     } catch (error) {
       console.error('Error fetching automation scripts:', error)
@@ -78,7 +79,7 @@ const Automation = () => {
         throw new Error('Failed to fetch test cases')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setTestCases(data.test_cases || [])
     } catch (error) {
       console.error('Error fetching test cases:', error)
@@ -98,7 +99,7 @@ const Automation = () => {
         throw new Error('Failed to fetch environments')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setEnvironments(data.environments || [])
     } catch (error) {
       console.error('Error fetching environments:', error)
@@ -161,7 +162,7 @@ const Automation = () => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.errors ? JSON.stringify(error.errors) : 'Failed to create automation script')
       }
 

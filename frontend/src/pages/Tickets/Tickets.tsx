@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import React, { useState, useEffect, useCallback, type FormEvent, type ChangeEvent, type DragEvent } from 'react'
 import * as XLSX from 'xlsx'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -80,7 +81,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         throw new Error('Failed to fetch tickets')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setTickets(data.tickets || [])
     } catch (error) {
       console.error('Error fetching tickets:', error)
@@ -102,7 +103,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         throw new Error('Failed to fetch users')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setUsers(data.data || [])
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -125,8 +126,11 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         throw new Error('Failed to fetch sprints')
       }
 
-      const data = await response.json()
-      setSprints(data.sprints || [])
+      const data = await safeJson(response)
+      const sprintList = data.sprints || []
+      setSprints(sprintList)
+      const activeSprint = sprintList.find((s: any) => s.status === 'active')
+      if (activeSprint) setFormData(prev => ({ ...prev, sprint: String(activeSprint.id) }))
     } catch (error) {
       console.error('Error fetching sprints:', error)
       setSprints([])
@@ -145,7 +149,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         throw new Error('Failed to fetch environments')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setEnvironments(data.environments || [])
     } catch (error) {
       console.error('Error fetching environments:', error)
@@ -155,7 +159,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
 
   const fetchLabels = useCallback(async () => {
     const res = await fetch('/api/v1/labels', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } })
-    if (res.ok) { const d = await res.json(); setAvailableLabels(d.labels || []) }
+    if (res.ok) { const d = await safeJson(res); setAvailableLabels(d.labels || []) }
   }, [])
 
   useEffect(() => {
@@ -187,7 +191,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
       body: JSON.stringify({ comment: { content: newComment } })
     })
     if (res.ok) {
-      const d = await res.json()
+      const d = await safeJson(res)
       setTicketComments(prev => [...prev, d.comment])
       setNewComment('')
     }
@@ -201,7 +205,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
       body: JSON.stringify({ ticket_time_log: timeLogEntry })
     })
     if (res.ok) {
-      const d = await res.json()
+      const d = await safeJson(res)
       setTicketTimeLogs(prev => [...prev, d.ticket_time_log])
       setTimeLogEntry({ time_spent: '', description: '' })
       setShowTimeLogModal(false)
@@ -249,7 +253,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.message || 'Failed to create ticket')
       }
 
@@ -338,7 +342,7 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
         }
       })
       if (!response.ok) throw new Error('Failed to fetch ticket')
-      const data = await response.json()
+      const data = await safeJson(response)
       setSelectedTicket(data.ticket || data)
     } catch (error) {
       console.error('Error fetching ticket:', error)
@@ -846,9 +850,9 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                   <input type="text" name="title" value={formData.title} onChange={handleChange} className="form-input" placeholder="Enter ticket title" required />
                 </div>
                 <div>
-                  <label className="form-label">Description *</label>
+                  <label className="form-label">Description</label>
                   <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                    <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border-0 outline-none resize-y" placeholder="Describe the issue..." rows={3} required></textarea>
+                    <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border-0 outline-none resize-y" placeholder="Describe the issue..." rows={3}></textarea>
                     {attachmentFiles.length > 0 && (
                       <div className="px-3 pb-2 flex flex-wrap gap-2">
                         {attachmentFiles.map((file, idx) => (
@@ -968,12 +972,12 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                 {/* Assignment & Timeline */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="form-label">Assign To</label>
-                    <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="form-select">
+                    <label className="form-label">Assign To *</label>
+                    <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="form-select" required>
                       <option value="">Unassigned</option>
                       {users.map(user => (
                         <option key={user.id} value={user.id}>
-                          {user.first_name} {user.last_name} ({user.email})
+                          {user.first_name} {user.last_name}
                         </option>
                       ))}
                     </select>
@@ -991,8 +995,8 @@ const Tickets = ({ projectId }: { projectId?: string }) => {
                     <input type="number" step="0.5" name="estimate" value={formData.estimate} onChange={handleChange} className="form-input" placeholder="4.5" />
                   </div>
                   <div>
-                    <label className="form-label">Sprint</label>
-                    <select name="sprint" value={formData.sprint} onChange={handleChange} className="form-select">
+                    <label className="form-label">Sprint *</label>
+                    <select name="sprint" value={formData.sprint} onChange={handleChange} className="form-select" required>
                       <option value="">No Sprint</option>
                       {sprints.map(sprint => (
                         <option key={sprint.id} value={sprint.id}>

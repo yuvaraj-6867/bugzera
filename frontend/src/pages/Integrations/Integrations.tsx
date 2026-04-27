@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -26,7 +27,7 @@ const Integrations = () => {
       const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
       const res = await fetch('/api/v1/integrations', { headers })
       if (res.ok) {
-        const data = await res.json()
+        const data = await safeJson(res)
         setIntegrations(data.integrations || [])
       }
     } catch (err) {
@@ -39,7 +40,7 @@ const Integrations = () => {
   const fetchWebhooks = useCallback(async () => {
     setLoadingWebhooks(true)
     const res = await fetch('/api/v1/webhooks', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } })
-    if (res.ok) { const d = await res.json(); setWebhooks(d.webhooks || []) }
+    if (res.ok) { const d = await safeJson(res); setWebhooks(d.webhooks || []) }
     setLoadingWebhooks(false)
   }, [])
 
@@ -68,7 +69,7 @@ const Integrations = () => {
   const handleTestWebhook = async (id: number) => {
     setTestingWebhook(id)
     const res = await fetch(`/api/v1/webhooks/${id}/test_delivery`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } })
-    const d = await res.json()
+    const d = await safeJson(res)
     setTestResult(prev => ({ ...prev, [id]: d.success ? `✓ HTTP ${d.http_status}` : `✗ ${d.error || 'Failed'}` }))
     setTestingWebhook(null)
   }

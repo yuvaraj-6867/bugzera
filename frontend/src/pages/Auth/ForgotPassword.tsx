@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, type FormEvent, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -31,7 +32,7 @@ const ForgotPassword = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP')
       setStep('reset')
     } catch (err) {
@@ -60,7 +61,7 @@ const ForgotPassword = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp, new_password: newPassword, confirm_password: confirmPassword }),
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok) throw new Error(data.error || 'Failed to reset password')
       setSuccess(data.message)
       setTimeout(() => navigate('/login'), 2500)

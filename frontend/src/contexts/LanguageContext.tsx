@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import { translations, languageNames } from '../i18n/translations'
 
 export type Language = 'en' | 'ta' | 'hi' | 'es' | 'fr' | 'ja'

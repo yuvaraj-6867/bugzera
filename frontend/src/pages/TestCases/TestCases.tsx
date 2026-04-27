@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import React, { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { T } from '../../components/AutoTranslate'
@@ -57,7 +58,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
         throw new Error('Failed to fetch test cases')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setTestCases(data.test_cases || [])
     } catch (error) {
       console.error('Error fetching test cases:', error)
@@ -79,7 +80,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
         throw new Error('Failed to fetch users')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       setUsers(data.data || [])
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -89,7 +90,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
 
   const fetchLabels = useCallback(async () => {
     const res = await fetch('/api/v1/labels', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } })
-    if (res.ok) { const d = await res.json(); setAvailableLabels(d.labels || []) }
+    if (res.ok) { const d = await safeJson(res); setAvailableLabels(d.labels || []) }
   }, [])
 
   useEffect(() => {
@@ -104,7 +105,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
     fetch(`/api/v1/test_cases/${selectedTestCase.id}/comments`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
     }).then(async res => {
-      if (res.ok) { const d = await res.json(); setTcComments(d.comments || []) }
+      if (res.ok) { const d = await safeJson(res); setTcComments(d.comments || []) }
     }).finally(() => setLoadingTcComments(false))
   }, [selectedTestCase?.id])
 
@@ -116,7 +117,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       body: JSON.stringify({ comment: { content: newTcComment } })
     })
     if (res.ok) {
-      const d = await res.json()
+      const d = await safeJson(res)
       setTcComments(prev => [...prev, d.comment])
       setNewTcComment('')
     }
@@ -159,11 +160,11 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.message || 'Failed to create test case')
       }
 
-      const result = await response.json()
+      const result = await safeJson(response)
       const testCaseNumber = result.test_case?.id ? `TC-${String(result.test_case.id).padStart(3, '0')}` : 'TC-XXX'
       toast.success(`Test case ${testCaseNumber} created successfully and saved to database!`)
       setFormData({
@@ -201,7 +202,7 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
       if (!response.ok) {
         throw new Error('Failed to fetch test case')
       }
-      const data = await response.json()
+      const data = await safeJson(response)
       setSelectedTestCase(data.test_case || data)
       setEditMode(false)
     } catch (error) {
@@ -243,10 +244,10 @@ const TestCases = ({ projectId }: { projectId?: string }) => {
         })
       })
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.message || 'Failed to update test case')
       }
-      const data = await response.json()
+      const data = await safeJson(response)
       setSelectedTestCase(data.test_case || data)
       setEditMode(false)
       fetchTestCases()

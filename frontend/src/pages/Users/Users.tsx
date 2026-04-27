@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -65,7 +66,7 @@ const Users = () => {
         throw new Error('Failed to fetch users')
       }
 
-      const result = await response.json()
+      const result = await safeJson(response)
       setUsers(result.data || [])
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -93,7 +94,7 @@ const Users = () => {
       body: JSON.stringify({ user: editUserData })
     })
     if (res.ok) { setShowEditModal(false); fetchUsers() }
-    else { const e = await res.json(); toast.error(e.errors || 'Update failed') }
+    else { const e = await safeJson(res); toast.error(e.errors || 'Update failed') }
   }
 
   const handleDeleteUser = async (id: number) => {
@@ -119,7 +120,7 @@ const Users = () => {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
         body: JSON.stringify(inviteForm)
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok) throw new Error(data.error || 'Invite failed')
       toast.success('Invitation sent successfully!')
       setInviteForm({ email: '', first_name: '', last_name: '', role: 'member' })
@@ -208,11 +209,11 @@ const Users = () => {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await safeJson(response)
         throw new Error(error.message || 'Failed to create user')
       }
 
-      const data = await response.json()
+      const data = await safeJson(response)
       console.log('User created:', data)
 
       toast.success('User created successfully and saved to database!')

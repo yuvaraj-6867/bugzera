@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -107,7 +108,7 @@ const TestRuns = () => {
         })
       })
       if (!res.ok) {
-        const err = await res.json()
+        const err = await safeJson(res)
         throw new Error(err.errors ? JSON.stringify(err.errors) : 'Failed to start test run')
       }
       setForm({ test_case_id: '', environment_id: '', browser: 'Chrome', notes: '' })

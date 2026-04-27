@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -66,7 +67,7 @@ const KnowledgeBase = () => {
       setLoading(true)
       const res = await fetch('/api/v1/articles', { headers: hdrs() })
       if (res.ok) {
-        const data = await res.json()
+        const data = await safeJson(res)
         setArticles(data.articles || [])
       }
     } catch (err) {
@@ -142,7 +143,7 @@ const KnowledgeBase = () => {
           }
         })
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok) {
         setFormError(data.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to save article')
         return

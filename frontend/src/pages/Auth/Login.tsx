@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/safeJson'
 import { useState, type FormEvent, type ChangeEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 
@@ -25,7 +26,7 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       })
-      const data = await response.json()
+      const data = await safeJson(response)
       if (!response.ok) throw new Error(data.error || 'Login failed')
       localStorage.setItem('authToken', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
@@ -58,7 +59,7 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email, password: formData.password })
       })
-      const data = await response.json()
+      const data = await safeJson(response)
       if (!response.ok) throw new Error(data.error || 'Login failed')
       if (data.token) {
         localStorage.setItem('authToken', data.token)
@@ -100,7 +101,7 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contactForm)
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok) throw new Error(data.error || 'Failed to send message')
       setContactSuccess(data.message)
       setTimeout(() => {
