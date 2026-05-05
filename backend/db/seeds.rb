@@ -1,8 +1,14 @@
-admin = User.create!(
-  email: 'admin@bugzera.com', password: 'password123',
-  first_name: 'Admin', last_name: 'User', role: 'admin', status: 'active',
-  phone: '+91 9876543210', location: 'Chennai, Tamil Nadu, India', joined_date: Date.current
-)
+admin = User.find_or_create_by!(email: 'admin@bugzera.com') do |u|
+  u.password = 'password123'
+  u.first_name = 'Admin'; u.last_name = 'User'; u.role = 'admin'; u.status = 'active'
+  u.phone = '+91 9876543210'; u.location = 'Chennai, Tamil Nadu, India'; u.joined_date = Date.current
+end
+
+User.find_or_create_by!(email: 'qaplatform67@gmail.com') do |u|
+  u.password = 'password123'
+  u.first_name = 'Yuvaraj'; u.last_name = 'Admin'; u.role = 'admin'; u.status = 'active'
+  u.phone = '+91 9876543210'; u.location = 'Chennai, Tamil Nadu, India'; u.joined_date = Date.current
+end
 
 manager = User.create!(
   email: 'manager@bugzera.com', password: 'password123',
