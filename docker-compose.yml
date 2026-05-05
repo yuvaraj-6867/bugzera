@@ -57,7 +57,7 @@ services:
       RAILS_ENV: development
       FRONTEND_URL: http://bugzera.shop
       GOOGLE_CLIENT_ID: "417034918187-1c2411evj26hb6pof1hpa69nltj0tb3n.apps.googleusercontent.com"
-      GOOGLE_CLIENT_SECRET: "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"
+      GOOGLE_CLIENT_SECRET: "G0CSPX-rx87yFG_0jAh0Qt3I5-lAfInsT1S"
       GOOGLE_REDIRECT_URI: "http://bugzera.shop/api/v1/google_calendar/callback"
       TZ: Asia/Kolkata
     depends_on:
