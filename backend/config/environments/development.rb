@@ -81,4 +81,6 @@ Rails.application.configure do
   # Allow requests from Docker containers
   config.hosts << "backend"
   config.hosts << "backend:3001"
+  config.hosts << "bugzera.shop"
+  config.hosts << "www.bugzera.shop"
 end
