@@ -93,6 +93,20 @@ services:
     networks:
       - bugzera_network
 
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: bugzera_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - bugzera_network
+
   # React Frontend
   frontend:
     build:
