@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['bugzera.shop', 'www.bugzera.shop'],
     watch: {
       usePolling: true,   // Required for file-watching inside Docker
       interval: 300,
