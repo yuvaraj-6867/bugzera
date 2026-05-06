@@ -4,7 +4,7 @@ module Api
       skip_before_action :authenticate_request, only: [:callback]
       skip_before_action :check_authorization,  only: [:callback]
 
-      SCOPE = Google::Apis::CalendarV3::AUTH_CALENDAR
+      SCOPE = "#{Google::Apis::CalendarV3::AUTH_CALENDAR} https://www.googleapis.com/auth/userinfo.email"
 
       # GET /api/v1/google_calendar/auth_url
       def auth_url
@@ -34,7 +34,7 @@ module Api
         client.code = code
         client.fetch_access_token!
 
-        email = fetch_google_email(client)
+        email = fetch_google_email(client) || "unknown_#{SecureRandom.hex(4)}@google.com"
 
         account = user.google_calendar_accounts.find_or_initialize_by(email: email)
         account.update!(
