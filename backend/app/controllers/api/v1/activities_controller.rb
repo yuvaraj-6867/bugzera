@@ -4,7 +4,7 @@ class Api::V1::ActivitiesController < ApplicationController
 
     activities = activities.where(project_id: params[:project_id]) if params[:project_id].present?
     activities = activities.where(owner_id: params[:user_id]) if params[:user_id].present?
-    activities = activities.where('activities.action LIKE ?', "%#{params[:action_type]}%") if params[:action_type].present?
+    activities = activities.where(trackable_type: params[:trackable_type]) if params[:trackable_type].present?
     activities = activities.where('activities.created_at >= ?', Time.parse(params[:from])) if params[:from].present?
 
     page     = [params.fetch(:page, 1).to_i, 1].max
@@ -13,7 +13,7 @@ class Api::V1::ActivitiesController < ApplicationController
 
     # When the activities table is empty, synthesize from existing records
     if total == 0 && page == 1 && params[:project_id].blank? && params[:user_id].blank?
-      return render json: synthesized_activities(params[:action_type])
+      return render json: synthesized_activities(params[:trackable_type])
     end
 
     activities = activities.offset((page - 1) * per_page).limit(per_page)
@@ -47,10 +47,10 @@ class Api::V1::ActivitiesController < ApplicationController
 
   private
 
-  def synthesized_activities(action_type_filter = nil)
+  def synthesized_activities(trackable_type_filter = nil)
     all = []
 
-    unless action_type_filter.present? && !action_type_filter.downcase.include?('ticket')
+    unless trackable_type_filter.present? && trackable_type_filter != 'Ticket'
       Ticket.includes(:created_by).order(created_at: :desc).limit(30).each do |t|
         owner = t.created_by
         all << {
@@ -67,7 +67,7 @@ class Api::V1::ActivitiesController < ApplicationController
       end
     end
 
-    unless action_type_filter.present? && !action_type_filter.downcase.include?('testcase')
+    unless trackable_type_filter.present? && trackable_type_filter != 'TestCase'
       TestCase.includes(:created_by).order(created_at: :desc).limit(20).each do |tc|
         owner = tc.created_by
         all << {
@@ -84,7 +84,7 @@ class Api::V1::ActivitiesController < ApplicationController
       end
     end
 
-    unless action_type_filter.present? && !action_type_filter.downcase.include?('testrun')
+    unless trackable_type_filter.present? && trackable_type_filter != 'TestRun'
       TestRun.includes(:user).order(created_at: :desc).limit(10).each do |tr|
         owner = tr.user
         all << {
@@ -96,6 +96,22 @@ class Api::V1::ActivitiesController < ApplicationController
           owner_initials: owner ? "#{owner.first_name.to_s[0]}#{owner.last_name.to_s[0]}".upcase : '?',
           trackable_name: "Test Run ##{tr.id}",
           created_at: tr.created_at,
+          parsed_parameters: {}
+        }
+      end
+    end
+
+    unless trackable_type_filter.present? && trackable_type_filter != 'Project'
+      Project.order(created_at: :desc).limit(20).each do |p|
+        all << {
+          id: "project-#{p.id}",
+          trackable_type: 'Project',
+          trackable_id: p.id,
+          action: 'created',
+          owner_name: 'Unknown',
+          owner_initials: '?',
+          trackable_name: p.name,
+          created_at: p.created_at,
           parsed_parameters: {}
         }
       end

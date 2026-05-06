@@ -48,7 +48,7 @@ const Activity = () => {
     pageNum === 1 ? setLoading(true) : setLoadingMore(true)
     try {
       const params = new URLSearchParams({ page: String(pageNum), per_page: '30' })
-      if (filter !== 'all') params.set('action_type', filter)
+      if (filter !== 'all') params.set('trackable_type', filter)
       const res = await fetch(`/api/v1/activities?${params}`, { headers })
       if (res.ok) {
         const data = await safeJson(res)
@@ -73,10 +73,6 @@ const Activity = () => {
     setPage(next)
     fetchActivities(next, true)
   }
-
-  const displayActivities = filter === 'all'
-    ? activities
-    : activities.filter(a => a.trackable_type === filter || a.action?.includes(filter))
 
   return (
     <div className="min-h-screen bg-[#FAFBFC] dark:bg-transparent p-4 md:p-8">
@@ -115,7 +111,7 @@ const Activity = () => {
       {/* Activity Stream */}
       {loading ? (
         <SkeletonTable rows={8} />
-      ) : displayActivities.length === 0 ? (
+      ) : activities.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           <div className="text-4xl mb-3">📭</div>
           <p>No activities found</p>
@@ -124,7 +120,7 @@ const Activity = () => {
       ) : (
         <>
           <div className="space-y-2">
-            {displayActivities.map((activity: any) => (
+            {activities.map((activity: any) => (
               <div key={activity.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-neon to-accent-electric flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
                   {activity.owner_initials || '?'}
