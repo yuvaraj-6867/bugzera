@@ -119,6 +119,7 @@ class Api::V1::TestCasesController < ApplicationController
       test_case.reload
       Activity.track(action: 'created', owner: @current_user, trackable: test_case, project_id: test_case.project_id) rescue nil
       AuditLog.log(action: 'test_case_created', user: @current_user, resource: test_case, request: request, details: "Created test case: #{test_case.title}") rescue nil
+      NotificationService.test_case_created(test_case, @current_user) rescue nil
       render json: test_case_json(test_case), status: :created
     else
       render json: { errors: test_case.errors }, status: :unprocessable_entity
@@ -178,6 +179,7 @@ class Api::V1::TestCasesController < ApplicationController
       test_case.reload
       Activity.track(action: 'updated', owner: @current_user, trackable: test_case, project_id: test_case.project_id) rescue nil
       AuditLog.log(action: 'test_case_updated', user: @current_user, resource: test_case, request: request, details: "Updated test case: #{test_case.title}") rescue nil
+      NotificationService.test_case_updated(test_case, @current_user) rescue nil
       render json: test_case_json(test_case)
     else
       render json: { errors: test_case.errors }, status: :unprocessable_entity
