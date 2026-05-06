@@ -4,12 +4,6 @@ admin = User.find_or_create_by!(email: 'admin@bugzera.com') do |u|
   u.phone = '+91 9876543210'; u.location = 'Chennai, Tamil Nadu, India'; u.joined_date = Date.current
 end
 
-User.find_or_create_by!(email: 'qaplatform67@gmail.com') do |u|
-  u.password = 'password123'
-  u.first_name = 'Yuvaraj'; u.last_name = 'Admin'; u.role = 'admin'; u.status = 'active'
-  u.phone = '+91 9876543210'; u.location = 'Chennai, Tamil Nadu, India'; u.joined_date = Date.current
-end
-
 manager = User.create!(
   email: 'manager@bugzera.com', password: 'password123',
   first_name: 'Yuva', last_name: 'Iyer', role: 'manager', status: 'active',
