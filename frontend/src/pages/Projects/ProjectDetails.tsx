@@ -7,7 +7,6 @@ import TestRuns from '../TestRuns/TestRuns'
 import Tickets from '../Tickets/Tickets'
 import Sprints from '../Sprints/Sprints'
 import Documents from '../Documents/Documents'
-import Calendar from '../Calendar/Calendar'
 import Environments from '../Environments/Environments'
 import Automation from '../Automation/Automation'
 import TestData from '../TestData/TestData'
@@ -527,7 +526,6 @@ const ProjectDetails = () => {
     { id: 'tickets',      label: 'Tickets' },
     { id: 'sprints',      label: 'Sprints' },
     { id: 'documents',    label: 'Documents' },
-    { id: 'calendar',     label: 'Calendar' },
     { id: 'environments', label: 'Environments', roles: ['manager', 'admin'] },
     { id: 'automation',   label: 'Automation',   roles: ['admin'] },
     { id: 'test-data',    label: 'Test Data',    roles: ['manager', 'admin'] },
@@ -607,7 +605,6 @@ const ProjectDetails = () => {
         {activeTab === 'tickets'      && <Tickets projectId={projectId} />}
         {activeTab === 'sprints'      && <Sprints projectId={projectId} />}
         {activeTab === 'documents'    && <Documents />}
-        {activeTab === 'calendar'     && <Calendar />}
         {activeTab === 'environments' && <Environments />}
         {activeTab === 'automation'   && <Automation />}
         {activeTab === 'test-data'    && <TestData />}

@@ -27,6 +27,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { path: '/projects',      labelKey: 'sidebar.projects' },
     { path: '/users',         labelKey: 'sidebar.users',      roles: ['admin', 'manager', 'developer', 'viewer'] },
     { path: '/analytics',     labelKey: 'sidebar.analytics',  roles: ['admin', 'manager', 'member', 'developer', 'viewer'] },
+    { path: '/calendar',      label: 'Calendar' },
     { path: '/activity',      labelKey: 'sidebar.activity' },
     { path: '/integrations',  labelKey: 'sidebar.integrations',   roles: ['manager', 'admin'] },
     { path: '/labels',        labelKey: 'sidebar.labels',          roles: ['manager', 'admin'] },
@@ -92,7 +93,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 }
               `}
             >
-              <span>{t(item.labelKey)}</span>
+              <span>{item.label ?? t(item.labelKey!)}</span>
             </Link>
           )
         })}
