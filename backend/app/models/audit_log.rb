@@ -2,8 +2,11 @@ class AuditLog < ApplicationRecord
   belongs_to :user, optional: true
 
   ACTIONS = %w[login logout login_failed password_changed user_created user_updated user_deleted
-               project_created project_updated settings_changed invitation_sent
-               role_changed data_exported data_imported].freeze
+               project_created project_updated project_deleted settings_changed invitation_sent
+               role_changed data_exported data_imported
+               ticket_created ticket_updated ticket_deleted
+               test_case_created test_case_updated test_case_deleted
+               test_run_started].freeze
 
   scope :recent, -> { order(created_at: :desc) }
 

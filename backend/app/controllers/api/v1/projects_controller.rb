@@ -63,6 +63,7 @@ class Api::V1::ProjectsController < ApplicationController
   def update
     project = Project.find(params[:id])
     if project.update(project_params)
+      AuditLog.log(action: 'project_updated', user: @current_user, resource: project, request: request, details: "Updated project: #{project.name}") rescue nil
       render json: { id: project.id, name: project.name, status: project.status }
     else
       render json: { errors: project.errors }, status: :unprocessable_content
@@ -71,6 +72,7 @@ class Api::V1::ProjectsController < ApplicationController
 
   def destroy
     project = Project.find(params[:id])
+    AuditLog.log(action: 'project_deleted', user: @current_user, resource: project, request: request, details: "Deleted project: #{project.name}") rescue nil
     project.destroy
     render json: { message: 'Project deleted successfully' }
   rescue ActiveRecord::RecordNotFound

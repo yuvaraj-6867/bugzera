@@ -104,6 +104,7 @@ class Api::V1::AuthController < ApplicationController
 
     if @current_user.authenticate(current_password)
       if @current_user.update(password: new_password)
+        AuditLog.log(action: 'password_changed', user: @current_user, request: request) rescue nil
         render json: { message: 'Password updated successfully' }
       else
         render json: { error: 'Failed to update password' }, status: :unprocessable_entity
