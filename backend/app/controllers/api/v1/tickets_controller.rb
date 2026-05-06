@@ -187,7 +187,6 @@ class Api::V1::TicketsController < ApplicationController
       NotificationService.ticket_created(ticket, @current_user) rescue nil
       WebhookService.deliver_event(ticket.project_id, 'ticket.created', { id: ticket.id, title: ticket.title, status: ticket.status }) rescue nil
       Activity.track(action: 'created', owner: @current_user, trackable: ticket, project_id: ticket.project_id) rescue nil
-      AuditLog.log(action: 'ticket_created', user: @current_user, resource: ticket, request: request, details: "Created ticket: #{ticket.title}") rescue nil
 
       render json: {
         id: ticket.id,
@@ -296,7 +295,6 @@ class Api::V1::TicketsController < ApplicationController
 
       WebhookService.deliver_event(ticket.project_id, 'ticket.updated', { id: ticket.id, title: ticket.title, status: ticket.status }) rescue nil
       Activity.track(action: 'updated', owner: @current_user, trackable: ticket, project_id: ticket.project_id) rescue nil
-      AuditLog.log(action: 'ticket_updated', user: @current_user, resource: ticket, request: request, details: "Updated ticket: #{ticket.title}") rescue nil
 
       render json: {
         id: ticket.id,
@@ -331,7 +329,6 @@ class Api::V1::TicketsController < ApplicationController
     project_id = ticket.project_id
     ticket.destroy
     Activity.track(action: 'deleted', owner: @current_user, project_id: project_id) rescue nil
-    AuditLog.log(action: 'ticket_deleted', user: @current_user, request: request, details: "Deleted ticket ##{params[:id]}") rescue nil
     render json: { message: 'Ticket deleted successfully' }
   end
 

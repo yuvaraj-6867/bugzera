@@ -26,26 +26,6 @@ class NotificationService
     notify_all_with_pref(:inapp_test_runs, title, message, test_run)
   end
 
-  # ── Project events ─────────────────────────────────────────────────────────
-  def self.project_created(project, creator)
-    title   = "New Project: #{project.name}"
-    message = "#{creator.full_name} created project '#{project.name}'."
-    notify_all_with_pref(:inapp_tickets, title, message, project)
-  end
-
-  # ── Test case events ───────────────────────────────────────────────────────
-  def self.test_case_created(test_case, creator)
-    title   = "New Test Case: #{test_case.title}"
-    message = "#{creator.full_name} created test case '#{test_case.title}' in project #{test_case.project&.name}."
-    notify_all_with_pref(:inapp_test_runs, title, message, test_case)
-  end
-
-  def self.test_case_updated(test_case, updater)
-    title   = "Test Case Updated: #{test_case.title}"
-    message = "#{updater.full_name} updated test case '#{test_case.title}' — status: #{test_case.status}."
-    notify_all_with_pref(:inapp_test_runs, title, message, test_case)
-  end
-
   # ── Helpers ────────────────────────────────────────────────────────────────
   def self.notify_all_with_pref(pref_key, title, message, notifiable = nil)
     email_pref_key = pref_key.to_s.sub('inapp_', 'email_').to_sym
