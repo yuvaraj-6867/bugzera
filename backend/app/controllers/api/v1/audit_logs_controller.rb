@@ -7,7 +7,7 @@ class Api::V1::AuditLogsController < ApplicationController
     logs = AuditLog.includes(:user).recent
 
     logs = logs.where(user_id: params[:user_id]) if params[:user_id].present?
-    logs = logs.where(action: params[:action]) if params[:action].present?
+    logs = logs.where(action: params[:action_filter]) if params[:action_filter].present?
     logs = logs.where(resource_type: params[:resource_type]) if params[:resource_type].present?
 
     if params[:from].present?
