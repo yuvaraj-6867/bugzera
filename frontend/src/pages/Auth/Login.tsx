@@ -218,7 +218,7 @@ const Login = () => {
           <p className="text-center text-gray-400 text-xs font-medium uppercase tracking-widest mb-4">Quick Demo Access</p>
           <div className="grid grid-cols-5 gap-2">
             {[
-              { role: 'Admin', email: 'qaplatform67@gmail.com', color: 'from-red-500 to-orange-500' },
+              { role: 'Admin', email: 'admin@bugzera.com', color: 'from-red-500 to-orange-500' },
               { role: 'Manager', email: 'manager@bugzera.com', color: 'from-purple-500 to-indigo-500' },
               { role: 'Member', email: 'member@bugzera.com', color: 'from-blue-500 to-cyan-500' },
               { role: 'Developer', email: 'developer@bugzera.com', color: 'from-green-500 to-teal-500' },
