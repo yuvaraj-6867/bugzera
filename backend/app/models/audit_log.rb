@@ -4,7 +4,9 @@ class AuditLog < ApplicationRecord
   ACTIONS = %w[login logout login_failed password_changed
                user_created user_updated user_deleted invitation_sent role_changed
                project_created project_updated project_deleted
-               settings_changed data_exported data_imported].freeze
+               settings_changed data_exported data_imported
+               calendar_event_created calendar_event_updated calendar_event_deleted
+               integration_created integration_updated integration_deleted].freeze
 
   scope :recent, -> { order(created_at: :desc) }
 

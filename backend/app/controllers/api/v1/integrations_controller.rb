@@ -14,6 +14,7 @@ class Api::V1::IntegrationsController < ApplicationController
     @integration = Integration.new(integration_params)
 
     if @integration.save
+      AuditLog.log(action: 'integration_created', user: @current_user, request: request, details: "Created integration: #{@integration.name}") rescue nil
       render json: { integration: @integration }, status: :created
     else
       render json: { errors: @integration.errors }, status: :unprocessable_entity
@@ -22,6 +23,7 @@ class Api::V1::IntegrationsController < ApplicationController
 
   def update
     if @integration.update(integration_params)
+      AuditLog.log(action: 'integration_updated', user: @current_user, request: request, details: "Updated integration: #{@integration.name}") rescue nil
       render json: { integration: @integration }
     else
       render json: { errors: @integration.errors }, status: :unprocessable_entity
@@ -29,6 +31,7 @@ class Api::V1::IntegrationsController < ApplicationController
   end
 
   def destroy
+    AuditLog.log(action: 'integration_deleted', user: @current_user, request: request, details: "Deleted integration: #{@integration.name}") rescue nil
     @integration.destroy
     head :no_content
   end

@@ -18,6 +18,7 @@ class Api::V1::CalendarEventsController < ApplicationController
     @event.created_by = current_user
 
     if @event.save
+      AuditLog.log(action: 'calendar_event_created', user: current_user, request: request, details: "Created event: #{@event.title}") rescue nil
       # Handle recurring events
       recurrence_rule  = params[:recurrence_rule].to_s.strip  # daily | weekly | monthly
       recurrence_count = [[params[:recurrence_count].to_i, 1].max, 52].min
@@ -47,6 +48,7 @@ class Api::V1::CalendarEventsController < ApplicationController
 
   def update
     if @event.update(event_params)
+      AuditLog.log(action: 'calendar_event_updated', user: current_user, request: request, details: "Updated event: #{@event.title}") rescue nil
       render json: event_json(@event)
     else
       render json: { errors: @event.errors }, status: :unprocessable_entity
@@ -77,6 +79,7 @@ class Api::V1::CalendarEventsController < ApplicationController
       end
     end
     @event.destroy
+    AuditLog.log(action: 'calendar_event_deleted', user: current_user, request: request, details: "Deleted event: #{@event.title}") rescue nil
     head :no_content
   end
 
