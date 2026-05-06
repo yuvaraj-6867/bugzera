@@ -19,6 +19,9 @@ class AuditLog < ApplicationRecord
       status: status,
       details: details
     )
+  rescue => e
+    Rails.logger.error "AuditLog.log failed: #{e.message}"
+    nil
   end
 
   def user_name

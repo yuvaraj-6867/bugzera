@@ -4,7 +4,7 @@ class Api::V1::AuthController < ApplicationController
   skip_before_action :update_user_activity, only: [:login, :register, :forgot_password, :reset_password, :contact_admin]
 
   def logout
-    AuditLog.log(action: 'logout', user: @current_user, request: request) rescue nil
+    AuditLog.log(action: 'logout', user: @current_user, request: request)
     @current_user&.increment!(:token_version)
     render json: { message: 'Logged out successfully' }
   end
@@ -39,7 +39,7 @@ class Api::V1::AuthController < ApplicationController
       end
       user.reset_failed!
       user.update_columns(last_activity_at: Time.current, login_count: (user.login_count || 0) + 1)
-      AuditLog.log(action: 'login', user: user, request: request) rescue nil
+      AuditLog.log(action: 'login', user: user, request: request)
       token = JsonWebToken.encode(user_id: user.id)
       render json: {
         user: {
@@ -55,7 +55,7 @@ class Api::V1::AuthController < ApplicationController
       }
     else
       user.increment_failed!
-      AuditLog.log(action: 'login_failed', user: user, request: request, status: 'failure', details: 'Invalid password') rescue nil
+      AuditLog.log(action: 'login_failed', user: user, request: request, status: 'failure', details: 'Invalid password')
       attempts_left = [5 - (user.failed_login_attempts || 0), 0].max
       msg = attempts_left > 0 ? "Invalid credentials. #{attempts_left} attempt(s) remaining before lockout." : 'Account locked due to too many failed attempts.'
       render json: { error: msg }, status: :unauthorized
@@ -185,7 +185,7 @@ class Api::V1::AuthController < ApplicationController
       return
     end
 
-    UserMailer.contact_admin_email(name, email, message, 'qaplatform67@gmail.com').deliver_now
+    UserMailer.contact_admin_email(name, email, message, 'admin@bugzera.com').deliver_now
     render json: { message: 'Your message has been sent to the administrator.' }
   end
 
