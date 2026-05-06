@@ -13,6 +13,7 @@ class AuditLog < ApplicationRecord
       user: user,
       resource_type: resource&.class&.name,
       resource_id: resource&.id,
+      resource_name: resource.try(:name) || resource.try(:email) || resource.try(:title),
       changes_made: changes&.to_json,
       ip_address: request&.remote_ip,
       user_agent: request&.user_agent&.truncate(255),

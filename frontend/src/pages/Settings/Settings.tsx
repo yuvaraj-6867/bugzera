@@ -843,8 +843,14 @@ const AuditLogs = () => {
               </span>
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{log.user_name || 'System'}</span>
-                <span className="text-sm text-gray-500 mx-1">·</span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">{log.resource_type} {log.resource_id ? `#${log.resource_id}` : ''}</span>
+                {(log.resource_type || log.resource_id) && (
+                  <>
+                    <span className="text-sm text-gray-500 mx-1">·</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {log.resource_name || (log.resource_type ? `${log.resource_type}${log.resource_id ? ` #${log.resource_id}` : ''}` : '')}
+                    </span>
+                  </>
+                )}
                 {log.details && <p className="text-xs text-gray-400 mt-0.5 truncate">{log.details}</p>}
               </div>
               <div className="text-xs text-gray-400 flex-shrink-0 text-right">

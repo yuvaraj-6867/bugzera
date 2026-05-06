@@ -36,6 +36,7 @@ class Api::V1::ProjectsController < ApplicationController
       end
       render json: { id: project.id, name: project.name, status: project.status }, status: :created
       Activity.track(action: 'created', owner: @current_user, trackable: project) rescue nil
+      AuditLog.log(action: 'project_created', user: @current_user, resource: project, request: request, details: "Created project: #{project.name}") rescue nil
     else
       render json: { errors: project.errors }, status: :unprocessable_content
     end
