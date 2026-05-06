@@ -92,6 +92,7 @@ const Calendar = () => {
   // Google Calendar
   const [gcalAccounts,  setGcalAccounts]    = useState<{id: number; email: string}[]>([])
   const [gcalEvents,    setGcalEvents]      = useState<any[]>([])
+  const [syncing,       setSyncing]         = useState(false)
 
   const deleteType = (val: string, isCustom: boolean) => {
     if (isCustom) {
@@ -156,6 +157,20 @@ const Calendar = () => {
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [gcalAccounts.length, viewYear, viewMonth, fetchGcalEvents])
+
+  const syncAllToGcal = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/v1/google_calendar/sync', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+      })
+      const data = await safeJson(res)
+      toast.success(`Synced ${data.synced} events to Google Calendar`)
+      fetchGcalEvents(viewYear, viewMonth)
+    } catch { toast.error('Sync failed') }
+    finally { setSyncing(false) }
+  }
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -276,6 +291,19 @@ const Calendar = () => {
       })
       if (!res.ok) throw new Error('Failed to save')
       setShowModal(false); setEditEvent(null); fetchEvents()
+
+      // Auto-push to Google Calendar if connected
+      if (!editEvent && gcalAccounts.length > 0) {
+        try {
+          const startDt = new Date(formData.startTime)
+          const endDt   = new Date(startDt.getTime() + 60 * 60 * 1000)
+          await fetch('/api/v1/google_calendar/push_event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+            body: JSON.stringify({ title: formData.title, description: formData.description, location: formData.location, start_time: startDt.toISOString(), end_time: endDt.toISOString() })
+          })
+        } catch { /* silent fail */ }
+      }
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed') }
   }
 
@@ -296,6 +324,18 @@ const Calendar = () => {
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-accent-neon text-white text-sm font-semibold hover:opacity-90 transition"
           >
             + New Event
+          </button>
+        )}
+
+        {/* Sync to Google Calendar */}
+        {gcalAccounts.length > 0 && (
+          <button
+            onClick={syncAllToGcal}
+            disabled={syncing}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-gray-300 text-xs font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-60 transition"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            {syncing ? 'Syncing…' : 'Sync to Google'}
           </button>
         )}
 
