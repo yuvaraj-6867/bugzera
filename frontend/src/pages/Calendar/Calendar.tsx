@@ -290,6 +290,7 @@ const Calendar = () => {
         body: JSON.stringify({ calendar_event: { title: formData.title, description: formData.description, event_type: formData.eventType, start_time: formData.startTime ? new Date(formData.startTime).toISOString() : null, location: formData.location, all_day: formData.allDay, status: formData.status } })
       })
       if (!res.ok) throw new Error('Failed to save')
+      const savedEvent = await safeJson(res)
       setShowModal(false); setEditEvent(null); fetchEvents()
 
       // Auto-push to Google Calendar if connected
@@ -297,11 +298,20 @@ const Calendar = () => {
         try {
           const startDt = new Date(formData.startTime)
           const endDt   = new Date(startDt.getTime() + 60 * 60 * 1000)
-          await fetch('/api/v1/google_calendar/push_event', {
+          const gRes = await fetch('/api/v1/google_calendar/push_event', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken')}` },
             body: JSON.stringify({ title: formData.title, description: formData.description, location: formData.location, start_time: startDt.toISOString(), end_time: endDt.toISOString() })
           })
+          const gData = await safeJson(gRes)
+          // Save google_event_id back to BugZera event
+          if (gData.google_event_id && savedEvent.id) {
+            await fetch(`/api/v1/calendar_events/${savedEvent.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+              body: JSON.stringify({ calendar_event: { google_event_id: gData.google_event_id } })
+            })
+          }
         } catch { /* silent fail */ }
       }
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed') }

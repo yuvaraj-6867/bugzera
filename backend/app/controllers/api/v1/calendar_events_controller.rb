@@ -54,6 +54,28 @@ class Api::V1::CalendarEventsController < ApplicationController
   end
 
   def destroy
+    # Delete from Google Calendar if linked
+    if @event.google_event_id.present?
+      account = current_user.google_calendar_accounts.first
+      if account
+        begin
+          client = Signet::OAuth2::Client.new(
+            client_id:            ENV.fetch('GOOGLE_CLIENT_ID', ''),
+            client_secret:        ENV.fetch('GOOGLE_CLIENT_SECRET', ''),
+            token_credential_uri: 'https://oauth2.googleapis.com/token',
+            access_token:         account.access_token,
+            refresh_token:        account.refresh_token,
+            expires_at:           account.token_expiry
+          )
+          client.refresh! if client.expired?
+          service = Google::Apis::CalendarV3::CalendarService.new
+          service.authorization = client
+          service.delete_event('primary', @event.google_event_id)
+        rescue => e
+          Rails.logger.warn "Google Calendar delete failed: #{e.message}"
+        end
+      end
+    end
     @event.destroy
     head :no_content
   end
@@ -75,8 +97,8 @@ class Api::V1::CalendarEventsController < ApplicationController
 
   def event_params
     params.require(:calendar_event).permit(
-      :title, :description, :start_time, :event_type, 
-      :status, :all_day, :location, :attendees, :eventable_type, :eventable_id
+      :title, :description, :start_time, :event_type,
+      :status, :all_day, :location, :attendees, :eventable_type, :eventable_id, :google_event_id
     )
   end
 
