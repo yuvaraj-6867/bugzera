@@ -24,7 +24,7 @@ class Api::V1::AuditLogsController < ApplicationController
     logs = logs.offset((page - 1) * per_page).limit(per_page)
 
     render json: {
-      audit_logs: logs.as_json.map { |l| l.merge('user_name' => AuditLog.find(l['id']).user_name) },
+      audit_logs: logs.map { |l| l.as_json.merge('user_name' => l.user_name) },
       meta: { total: total, page: page, per_page: per_page, pages: (total.to_f / per_page).ceil }
     }
   end

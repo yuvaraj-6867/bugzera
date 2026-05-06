@@ -35,5 +35,15 @@ puts "   developer@bugzera.com / password123  (Developer)"
 puts "   viewer@bugzera.com    / password123  (Viewer)"
 puts "✅ Created #{User.count} users"
 
+# Create sample audit logs
+AuditLog.create!([
+  { action: 'login', user: admin, ip_address: '192.168.1.1', created_at: 2.days.ago },
+  { action: 'project_created', user: admin, resource_type: 'Project', resource_id: 1, created_at: 1.day.ago },
+  { action: 'settings_changed', user: admin, details: 'Updated notification preferences', created_at: 12.hours.ago },
+  { action: 'user_created', user: admin, resource_type: 'User', resource_id: manager.id, details: "Created user #{manager.email}", created_at: 6.hours.ago },
+  { action: 'login', user: manager, ip_address: '192.168.1.2', created_at: 3.hours.ago },
+])
+puts "✅ Created #{AuditLog.count} audit log entries"
+
 # cd /home/yuvaraj/bugzera/backend
 # rails db:drop db:create db:migrate db:seed
