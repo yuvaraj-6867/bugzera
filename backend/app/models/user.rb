@@ -24,6 +24,7 @@ class User < ApplicationRecord
   has_many :mentions, dependent: :destroy
   has_many :activities, dependent: :destroy
   has_many :dashboard_widgets, dependent: :destroy
+  has_many :google_calendar_accounts, dependent: :destroy
 
 
   scope :active, -> { where(status: 'active') }
