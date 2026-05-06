@@ -36,6 +36,10 @@ module Api
 
         email = fetch_google_email(client) || "unknown_#{SecureRandom.hex(4)}@google.com"
 
+        if user.google_calendar_accounts.exists?(email: email)
+          return render html: close_popup_html('error', "#{email} is already connected").html_safe
+        end
+
         account = user.google_calendar_accounts.find_or_initialize_by(email: email)
         account.update!(
           access_token:  client.access_token,
